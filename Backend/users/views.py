@@ -14,8 +14,8 @@ from .serializers import (
     UserProfileSerializer,
     ChangePasswordSerializer
 )
-from ..permissions import IsOwnerOrReadOnly
-from ..utils import get_client_ip, send_verification_email
+from common.permissions import IsOwnerOrReadOnly
+from common.utils import get_client_ip, send_verification_email
 
 
 class RegisterView(generics.CreateAPIView):
@@ -60,7 +60,7 @@ class LogoutView(APIView):
     def post(self, request):
         try:
             request.user.auth_token.delete()
-        except:
+        except:  # noqa: E722
             pass
         return Response({'message': 'Successfully logged out'})
 
