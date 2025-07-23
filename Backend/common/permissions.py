@@ -39,3 +39,15 @@ class IsSuperUserOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         return request.user and request.user.is_superuser
+    
+
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    """Allow owners to edit, others read-only"""
+    
+    def has_object_permission(self, request, view, obj):
+        # Read-only permissions are allowed for safe methods (GET, HEAD, OPTIONS)
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
+        # Only allow edit if the requesting user is the owner
+        return hasattr(obj, 'owner') and obj.owner == request.user

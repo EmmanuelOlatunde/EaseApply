@@ -1,21 +1,26 @@
 from rest_framework import status, generics, permissions
-#from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
-#from django.contrib.auth import login, logout
 from django.contrib.auth.models import update_last_login
-#from django.utils.decorators import method_decorator
-#from django.views.decorators.csrf import csrf_exempt
-from .models import User#, UserProfile
+from .models import User
 from .serializers import (
     UserRegistrationSerializer, 
     UserLoginSerializer, 
     UserProfileSerializer,
-    ChangePasswordSerializer
+    ChangePasswordSerializer,
+    ResetPasswordConfirmSerializer
 )
 from common.permissions import IsOwnerOrReadOnly
 from common.utils import get_client_ip, send_verification_email
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from rest_framework.permissions import AllowAny
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
+from django.contrib.auth.tokens import default_token_generator
 
 
 class RegisterView(generics.CreateAPIView):
@@ -32,24 +37,49 @@ class RegisterView(generics.CreateAPIView):
 
 
 class LoginView(APIView):
-    """User login endpoint"""
+    """User login endpoint with JWT"""
     permission_classes = [permissions.AllowAny]
-    
+
+    @swagger_auto_schema(
+        operation_description="Login with email and password to get JWT access & refresh tokens",
+        request_body=UserLoginSerializer,
+        responses={
+            200: openapi.Response(
+                description="Login successful",
+                examples={
+                    "application/json": {
+                        "access": "jwt_access_token_here",
+                        "refresh": "jwt_refresh_token_here",
+                        "user": {
+                            "id": 1,
+                            "email": "test@example.com",
+                            "username": "testuser"
+                        }
+                    }
+                }
+            ),
+            400: "Invalid credentials"
+        }
+    )
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            token, created = Token.objects.get_or_create(user=user)
-            
-            # Update last login info
+
+            # ✅ Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+
+            # ✅ Update last login info
             update_last_login(None, user)
             user.last_login_ip = get_client_ip(request)
             user.save(update_fields=['last_login_ip'])
-            
+
             return Response({
-                'token': token.key,
-                'user': UserProfileSerializer(user).data
-            })
+                "access": str(refresh.access_token),  # short-lived token
+                "refresh": str(refresh),              # long-lived token
+                "user": UserProfileSerializer(user).data
+            }, status=status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -77,7 +107,27 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 class ChangePasswordView(APIView):
     """Change password endpoint"""
     permission_classes = [permissions.IsAuthenticated]
-    
+    @swagger_auto_schema(
+        operation_description="Password Change",
+        request_body=ChangePasswordSerializer,
+        responses={
+            200: openapi.Response(
+                description="Password successful Changed",
+                examples={
+                    "application/json": {
+                        "access": "jwt_access_token_here",
+                        "refresh": "jwt_refresh_token_here",
+                        "user": {
+                            "id": 1,
+                            "email": "test@example.com",
+                            "username": "testuser"
+                        }
+                    }
+                }
+            ),
+            400: "Invalid credentials"
+        }
+    )
     def put(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
@@ -90,3 +140,64 @@ class ChangePasswordView(APIView):
             
             return Response({'message': 'Password changed successfully'})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ResendVerificationEmailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        if user.is_verified:
+            return Response({"message": "Your email is already verified."}, status=400)
+
+        send_verification_email(user)  # ✅ reuse same function
+        return Response({"message": "Verification email resent successfully."})
+
+
+class VerifyEmailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, uidb64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response({"error": "Invalid activation link"}, status=400)
+
+        if default_token_generator.check_token(user, token):
+            user.is_verified = True
+            user.save()
+            return Response({"message": "Email verified successfully"})
+        else:
+            return Response({"error": "Invalid or expired token"}, status=400)
+
+class ResetPasswordConfirmView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = ResetPasswordConfirmSerializer(data=request.data)
+        if not serializer.is_valid():
+            # Flatten serializer errors into a simple message
+            return Response(
+                {"error": "Invalid input", "details": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        uidb64 = serializer.validated_data['uid']
+        token = serializer.validated_data['token']
+        
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response({"error": "Invalid reset link"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if default_token_generator.check_token(user, token):
+            user.set_password(serializer.validated_data['new_password'])
+            user.save()
+            return Response({"message": "Password reset successful"})
+        return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+    

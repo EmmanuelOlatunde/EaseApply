@@ -26,7 +26,7 @@ def send_verification_email(user):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         
         subject = 'Verify your email address'
-        message = render_to_string('emails/verification_email.html', {
+        message = render_to_string('email/verification_email.html', {
             'user': user,
             'uid': uid,
             'token': token,
@@ -52,7 +52,7 @@ def send_password_reset_email(user):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         
         subject = 'Password Reset'
-        message = render_to_string('emails/password_reset_email.html', {
+        message = render_to_string('email/password_reset_email.html', {
             'user': user,
             'uid': uid,
             'token': token,

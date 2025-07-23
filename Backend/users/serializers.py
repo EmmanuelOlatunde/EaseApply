@@ -4,6 +4,23 @@ from django.contrib.auth.password_validation import validate_password
 #from django.core.exceptions import ValidationError
 from .models import User, UserProfile
 
+class UserSerializer(serializers.ModelSerializer):
+    """Basic user serializer used by Djoser for `user` and `current_user` endpoints"""
+    
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "phone",
+            "is_active",
+            "is_verified",  # Only if your model has this
+            "created_at",   # Only if your model has this
+        )
+        read_only_fields = ("id", "is_active", "is_verified", "created_at")
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """User registration serializer"""
@@ -48,6 +65,7 @@ class UserLoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError('Account is disabled')
             attrs['user'] = user
         return attrs
+    
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -78,10 +96,31 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class ChangePasswordSerializer(serializers.Serializer):
     """Change password serializer"""
     old_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True, validators=[validate_password])
-    
+    new_password = serializers.CharField(
+        required=True,
+        validators=[validate_password]
+    )
+    new_password_confirm = serializers.CharField(required=True)
+
     def validate_old_password(self, value):
         user = self.context['request'].user
         if not user.check_password(value):
             raise serializers.ValidationError('Invalid old password')
         return value
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['new_password_confirm']:
+            raise serializers.ValidationError({"new_password_confirm": "Passwords do not match"})
+        return attrs
+
+
+class ResetPasswordConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(validators=[validate_password])
+    new_password_confirm = serializers.CharField()
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['new_password_confirm']:
+            raise serializers.ValidationError("Passwords don't match")
+        return attrs
