@@ -31,8 +31,11 @@ class RegisterView(generics.CreateAPIView):
     
     def perform_create(self, serializer):
         user = serializer.save()
-        # Send verification email
-        send_verification_email(user)
+        try:
+            send_verification_email(user)
+        except Exception as e:
+            # Log the failure but don't block registration
+            print(f"Email sending failed: {e}")
         return user
 
 
@@ -93,6 +96,8 @@ class LogoutView(APIView):
         except:  # noqa: E722
             pass
         return Response({'message': 'Successfully logged out'})
+    
+
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
@@ -148,11 +153,16 @@ class ResendVerificationEmailView(APIView):
     def post(self, request):
         user = request.user
         if user.is_verified:
-            return Response({"message": "Your email is already verified."}, status=400)
+            return Response({"message": "Your email is already verified."}, status=status.HTTP_400_BAD_REQUEST)
 
-        send_verification_email(user)  # ✅ reuse same function
-        return Response({"message": "Verification email resent successfully."})
-
+        try:
+            send_verification_email(user)
+            return Response({"message": "Verification email resent successfully."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": "Failed to send verification email", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class VerifyEmailView(APIView):
     permission_classes = [AllowAny]

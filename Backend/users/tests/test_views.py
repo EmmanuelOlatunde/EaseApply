@@ -1,5 +1,6 @@
 #from django.test import TestCase
 from django.urls import reverse
+import uuid
 #from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
@@ -7,7 +8,7 @@ from django.utils.encoding import force_bytes
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from unittest.mock import patch
 from users.models import User
 from users.serializers import UserProfileSerializer
@@ -21,11 +22,13 @@ class BaseTestCase(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.user_data = {
-            'email': 'test@example.com',
-            'username': 'testuser',
-            'password': 'testpass123',
+            'email': f'test_{uuid.uuid4().hex[:6]}@example.com',
+            'username': f'testuser_{uuid.uuid4().hex[:6]}',
+            'password': 'SuperSecurePass123!',
+            'password_confirm': 'SuperSecurePass123!',
             'first_name': 'Test',
             'last_name': 'User'
+    
         }
         self.user = User.objects.create_user(
             email='existing@example.com',
@@ -117,6 +120,7 @@ class RegisterViewTest(BaseTestCase):
         response = self.client.post(self.url, self.user_data)
         # Registration should still succeed even if email fails
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(User.objects.filter(email=self.user_data['email']).exists())
         mock_send_email.assert_called_once()
 
 
@@ -219,8 +223,9 @@ class LogoutViewTest(BaseTestCase):
     
     def test_logout_success(self):
         """Test successful logout"""
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
-        
+        jwt_token = AccessToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(jwt_token)}')
+                
         response = self.client.post(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['message'], 'Successfully logged out')
@@ -259,8 +264,8 @@ class ProfileViewTest(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.url = reverse('users:profile')  # Adjust URL name as needed
-        self.token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        jwt_token = AccessToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(jwt_token)}')
     
     def test_get_profile_success(self):
         """Test successful profile retrieval"""
@@ -329,8 +334,8 @@ class ChangePasswordViewTest(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.url = reverse('users:change-password')  # Adjust URL name as needed
-        self.token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        jwt_token = AccessToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(jwt_token)}')
     
     def test_change_password_success(self):
         """Test successful password change"""
@@ -389,7 +394,6 @@ class ChangePasswordViewTest(BaseTestCase):
     
     def test_change_password_unauthenticated(self):
         """Test password change without authentication"""
-        self.client.force_authenticate(user=self.user)
         self.client.credentials()  # Clear credentials
         
         password_data = {
@@ -422,14 +426,14 @@ class ResendVerificationEmailViewTest(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.url = reverse('users:resend-verification')  # Adjust URL name as needed
-        self.token = Token.objects.create(user=self.unverified_user)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        jwt_token = AccessToken.for_user(self.unverified_user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(jwt_token)}')
 
     
     @patch('users.views.send_verification_email')
     def test_resend_verification_success(self, mock_send_email):
         """Test successful verification email resend"""
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.unverified_user)
         response = self.client.post(self.url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -442,8 +446,8 @@ class ResendVerificationEmailViewTest(BaseTestCase):
         # Use verified user
         self.client.credentials()
 
-        verified_token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + verified_token.key)
+        jwt_token = AccessToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(jwt_token)}')
         
         response = self.client.post(self.url)
         
@@ -460,12 +464,14 @@ class ResendVerificationEmailViewTest(BaseTestCase):
     @patch('users.views.send_verification_email')
     def test_resend_verification_email_failure(self, mock_send_email):
         """Test resend verification when email sending fails"""
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.unverified_user)  # Use unverified user
         mock_send_email.side_effect = Exception("Email service down")
         
-        # The view doesn't handle email sending exceptions, so it should raise
-        with self.assertRaises(Exception):
-            self.client.post(self.url)
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertIn('error', response.data)
+        self.assertEqual(response.data['error'], 'Failed to send verification email')
+        mock_send_email.assert_called_once()
 
 
 class VerifyEmailViewTest(BaseTestCase):
@@ -505,7 +511,7 @@ class VerifyEmailViewTest(BaseTestCase):
     
     def test_verify_email_nonexistent_user(self):
         """Test email verification with non-existent user ID"""
-        import uuid
+        
         fake_uuid = uuid.uuid4()  # random UUID not in DB
         fake_uidb64 = urlsafe_base64_encode(force_bytes(str(fake_uuid)))
         invalid_url = reverse('users:email-verify', kwargs={
@@ -570,7 +576,7 @@ class ResetPasswordConfirmViewTest(BaseTestCase):
     
     def test_reset_password_confirm_success(self):
         """Test successful password reset confirmation"""
-
+        
         reset_data = {
             'uid': self.uidb64,
             'token': self.token,
@@ -710,6 +716,7 @@ class ViewsIntegrationTest(BaseTestCase):
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
         
         # 3. Verify email
+        new_user = User.objects.get(email=self.user_data['email'])  # ensure it's saved
         uidb64 = urlsafe_base64_encode(force_bytes(new_user.pk))
         token = default_token_generator.make_token(new_user)
         verify_url = reverse('users:email-verify', kwargs={
@@ -781,8 +788,8 @@ class EdgeCaseTest(BaseTestCase):
     
     def test_profile_update_with_empty_values(self):
         """Test profile update with empty string values"""
-        token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+        jwt_token = AccessToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(jwt_token)}')
         
         profile_url = reverse('users:profile')
         update_data = {
@@ -799,8 +806,8 @@ class EdgeCaseTest(BaseTestCase):
     
     def test_change_password_with_unicode_characters(self):
         """Test password change with unicode characters"""
-        token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+        jwt_token = AccessToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(jwt_token)}')
         
         change_password_url = reverse('users:change-password')
         password_data = {
@@ -845,8 +852,8 @@ class EdgeCaseTest(BaseTestCase):
     
     def test_xss_attempts_in_profile_data(self):
         """Test XSS protection in profile fields"""
-        token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+        jwt_token = AccessToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(jwt_token)}')
         
         profile_url = reverse('users:profile')
         xss_data = {
@@ -899,11 +906,10 @@ class SecurityTest(BaseTestCase):
     def test_token_invalidation_on_password_change(self):
         """Test that all tokens are invalidated when password changes"""
         # Create multiple tokens for the user
-        Token.objects.create(user=self.user)
-        token2 = Token.objects.create(user=self.user)  # This will replace token1 in DRF
+        AccessToken.for_user(self.user)
+        jwt_token = AccessToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(jwt_token)}')
         
-        # Change password
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token2.key)
         change_password_url = reverse('users:change-password')
         password_data = {
             'old_password': 'existingpass123',
@@ -921,7 +927,8 @@ class SecurityTest(BaseTestCase):
     def test_password_reset_token_single_use(self):
         """Test that password reset tokens can only be used once"""
         uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
-        token = default_token_generator.make_token(self.user)
+        token = default_token_generator.make_token(self.user)  # Use correct token generator
+        
         reset_url = reverse('users:reset-password-confirm')
         
         reset_data = {
@@ -935,12 +942,18 @@ class SecurityTest(BaseTestCase):
         response1 = self.client.post(reset_url, reset_data)
         self.assertEqual(response1.status_code, status.HTTP_200_OK)
         
+        # Verify password was changed
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('newpassword123'))
+        
         # Second use with same token - should fail
         reset_data['new_password'] = 'anothernewpassword123'
+        reset_data['new_password_confirm'] = 'anothernewpassword123'
         response2 = self.client.post(reset_url, reset_data)
         self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response2.data['error'], 'Invalid or expired token')
-    
+
+
     def test_verification_token_single_use(self):
         """Test that email verification tokens can only be used once"""
         # Create unverified user
@@ -1029,8 +1042,8 @@ class PerformanceTest(BaseTestCase):
         """Test that views don't make excessive database queries"""
         from django.db import connection
         
-        token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+        jwt_token = AccessToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(jwt_token)}')
         
         profile_url = reverse('users:profile')
         
@@ -1127,8 +1140,8 @@ class ViewResponseFormatTest(BaseTestCase):
     
     def test_profile_response_structure(self):
         """Test profile response has correct structure"""
-        token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+        jwt_token = AccessToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(jwt_token)}')
         
         profile_url = reverse('users:profile')
         response = self.client.get(profile_url)
@@ -1171,8 +1184,15 @@ class HTTPMethodTest(BaseTestCase):
         ]
         
         for url, methods in urls_and_methods:
+            # For views requiring authentication, authenticate the client
+            if url == reverse('users:logout'):
+                jwt_token = AccessToken.for_user(self.user)
+                self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(jwt_token)}')
+            else:
+                self.client.credentials()  # Clear credentials for other views
+            
             for method in methods:
-                client_method = getattr(self.client, method)
+                client_method = getattr(self.client, method.lower())
                 response = client_method(url)
                 self.assertEqual(
                     response.status_code,
