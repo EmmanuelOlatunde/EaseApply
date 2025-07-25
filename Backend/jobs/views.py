@@ -11,7 +11,7 @@ from .serializers import (
 from .utils import extract_job_details
 
 
-class JobDescriptionListCreateView(generics.ListCreateAPIView):
+class JobDescriptionCreateView(generics.CreateAPIView):
     """
     List all job descriptions for authenticated user or create a new one
     """
@@ -29,9 +29,28 @@ class JobDescriptionListCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        job_description = serializer.save()
+
+        try:
+            job_description = serializer.save()
+        except ValueError as e:
+            # Specific handling for document processing errors
+            return Response(
+                {"message": f"Document processing error: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            # Generic database or unknown error
+            return Response(
+                {
+                    "message": "Failed to save job description due to a server error.",
+                    "error": str(e)  # optional, remove in production
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
         response_serializer = JobDescriptionSerializer(job_description)
         headers = self.get_success_headers(serializer.data)
+
         return Response(
             {
                 'message': 'Job description uploaded and processed successfully',
@@ -173,12 +192,13 @@ class JobDeleteView(generics.DestroyAPIView):
     lookup_url_kwarg = 'job_id'
 
     def get_queryset(self):
-        return JobDescription.objects.filter(user=self.request.user)
+        return JobDescription.objects.filter(user=self.request.user).order_by('created_at')
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response(
             {'message': 'Job description deleted successfully'},
-            status=status.HTTP_204_NO_CONTENT
+            status=status.HTTP_200_OK
+            
         )

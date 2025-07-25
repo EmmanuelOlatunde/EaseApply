@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from .models import JobDescription
 from .utils import extract_text_from_document, extract_job_details
-
+from django.core.exceptions import ValidationError
+from django.utils.text import get_valid_filename
+import os
 
 class JobDescriptionSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
@@ -40,6 +42,42 @@ class JobDescriptionSerializer(serializers.ModelSerializer):
         if obj.document:
             return obj.document.name.split('/')[-1]  # Return just filename
         return None
+    
+    def validate_document(self, value):
+        # Check for path traversal in filename
+        filename = value.name
+        # Normalize filename to prevent path traversal
+        sanitized_filename = os.path.basename(get_valid_filename(filename))
+        if filename != sanitized_filename:
+            raise ValidationError('Unsupported file type: Invalid filename.')
+        
+        # Validate file extension
+        allowed_extensions = ['pdf', 'doc', 'docx']
+        ext = os.path.splitext(filename)[1].lower().lstrip('.')
+        if ext not in allowed_extensions:
+            raise ValidationError('Unsupported file type: Only PDF, DOC, and DOCX are allowed.')
+        
+        # Check if file is empty
+        if value.size == 0:
+            raise ValidationError('The submitted file is empty.')
+        
+        return value
+    
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        
+        # Extract job details
+        extracted = extract_job_details(validated_data.get('raw_content', ''))
+        validated_data.update(extracted)
+        
+        ## ✅ Truncate after extraction
+        for field in ['title', 'company', 'location']:
+            value = validated_data.get(field)
+            if value:
+                validated_data[field] = value[:200]
+        
+        return super().create(validated_data)
+
 
 
 class JobDescriptionUploadSerializer(serializers.ModelSerializer):
@@ -142,3 +180,4 @@ class JobDescriptionListSerializer(serializers.ModelSerializer):
         if obj.document:
             return obj.document.name.split('/')[-1]
         return None
+    

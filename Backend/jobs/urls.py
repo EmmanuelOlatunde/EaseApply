@@ -5,7 +5,7 @@ app_name = 'jobs'
 
 urlpatterns = [
     # Main CRUD endpoints
-    path('', views.JobDescriptionListCreateView.as_view(), name='job-list-create'),
+    path('', views.JobDescriptionCreateView.as_view(), name='job-create'),
     path('<int:pk>/', views.JobDescriptionDetailView.as_view(), name='job-detail'),
 
     # Upload / Paste endpoints
