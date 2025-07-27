@@ -40,7 +40,7 @@ class JobDescriptionSerializer(serializers.ModelSerializer):
 
     def get_document_name(self, obj):
         if obj.document:
-            return obj.document.name.split('/')[-1]  # Return just filename
+            return os.path.basename(obj.document.name).split('/')[-1]  # Return just filename
         return None
     
     def validate_document(self, value):
