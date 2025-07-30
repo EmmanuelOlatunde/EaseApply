@@ -36,21 +36,75 @@ class Resume(models.Model):
         max_length=10, 
         choices=FILE_TYPE_CHOICES
     )
+    
+    # Raw extracted text
     extracted_text = models.TextField(blank=True, null=True)
+    
+    # Parsed structured data
+    full_name = models.CharField(max_length=255, blank=True, null=True)
+    summary = models.TextField(blank=True, null=True)
+    
+    # Contact information (stored as JSON)
+    contact_info = models.JSONField(default=dict, blank=True)
+    
+    # Skills (stored as JSON array)
+    skills = models.JSONField(default=list, blank=True)
+    
+    # Work experience (stored as JSON array of objects)
+    work_experience = models.JSONField(default=list, blank=True)
+    
+    # Education (stored as JSON array of objects)
+    education = models.JSONField(default=list, blank=True)
+    
+    # Certifications (stored as JSON array)
+    certifications = models.JSONField(default=list, blank=True)
+    
+    # Projects (stored as JSON array of objects)
+    projects = models.JSONField(default=list, blank=True)
+    
+    # Parsing status
+    is_parsed = models.BooleanField(default=False)
+    parsing_error = models.TextField(blank=True, null=True)
+    
     file_size = models.PositiveIntegerField(help_text="File size in bytes")
     
     # Timestamps
     uploaded_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    parsed_at = models.DateTimeField(blank=True, null=True)
     
     class Meta:
         ordering = ['-uploaded_at']
         indexes = [
             models.Index(fields=['user', '-uploaded_at']),
+            models.Index(fields=['user', 'is_parsed']),
         ]
     
     def __str__(self):
         return f"{self.user.username} - {self.original_filename}"
+    
+    @property
+    def contact_email(self):
+        """Get email from contact_info"""
+        return self.contact_info.get('email') if self.contact_info else None
+    
+    @property
+    def contact_phone(self):
+        """Get phone from contact_info"""
+        return self.contact_info.get('phone') if self.contact_info else None
+    
+    @property
+    def contact_linkedin(self):
+        """Get LinkedIn from contact_info"""
+        return self.contact_info.get('linkedin') if self.contact_info else None
+    
+    def get_skills_display(self):
+        """Get skills as comma-separated string"""
+        return ', '.join(self.skills) if self.skills else ''
+    
+    def get_certifications_display(self):
+        """Get certifications as comma-separated string"""
+        return ', '.join(self.certifications) if self.certifications else ''
     
     def save(self, *args, **kwargs):
         if self.file:

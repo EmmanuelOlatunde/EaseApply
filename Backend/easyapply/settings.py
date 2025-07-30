@@ -2,11 +2,13 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from decouple import config
-
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# ✅ Load the .env file FIRST
+load_dotenv(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -34,6 +36,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'drf_yasg',
+    "corsheaders",
 
     # Local apps
     'users',
@@ -71,8 +74,15 @@ TEMPLATES = [
     },
 ]
 
+
+CORS_ALLOW_ALL_ORIGINS = True
+
 WSGI_APPLICATION = 'easyapply.wsgi.application'
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",   # React dev server
+    "http://127.0.0.1:8000",  # Swagger UI
+]
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -103,6 +113,20 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
+OPENROUTER_API_KEY_KIMI = os.getenv("OPENROUTER_API_KEY_KIMI")
+
+if not OPENROUTER_API_KEY_KIMI:
+    raise ValueError("OPENROUTER_API_KEY_KIMI environment variable is required")
+
+API_KEYS = {
+    "kimi": os.getenv("OPENROUTER_API_KEY_KIMI"),
+    "qwen": os.getenv("OPENROUTER_API_KEY_QWEN"),
+    "deepseek": os.getenv("OPENROUTER_API_KEY_DEEPSEEK"),
+}
+
+if not API_KEYS:
+    raise ValueError("API_KEYS environment variable is required")
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -231,12 +255,12 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 FILE_UPLOAD_PERMISSIONS = 0o644
 
 
-# CORS Configuration (if using frontend)
-CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
+# # CORS Configuration (if using frontend)
+# CORS_ALLOWED_ORIGINS = [
+#     "http://127.0.0.1:8000",
+#     "http://localhost:8000",
   
-]
+# ]
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -318,3 +342,66 @@ SWAGGER_SETTINGS = {
 }
 
 
+
+
+
+# ================================
+# 11. Django Settings Configuration
+# ================================
+"""
+# In your settings.py, add:
+
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+
+# Add to INSTALLED_APPS
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'rest_framework',
+    'users',
+    'jobs',
+    'resumes',
+    'analysis',  # Add this
+]
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'analysis.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'analysis': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+"""

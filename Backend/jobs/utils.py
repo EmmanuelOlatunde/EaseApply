@@ -72,7 +72,10 @@ def extract_job_details(raw_content: str) -> Dict[str, Optional[str]]:
         'skills_required': extract_skills(text),
         'experience_level': extract_experience_level(text_lower),
     }
-    
+    # Ensure company is at least 3 characters long or set it to empty string
+    if not extracted_data["company"] or len(extracted_data["company"]) <= 3:
+        extracted_data["company"] = ""
+
     return extracted_data
 
 
@@ -149,8 +152,9 @@ def extract_company_name(text: str) -> Optional[str]:
     }
 
     patterns = [
-        r'(?i)\b(?:company|organization|employer)\s*[:\-]\s*([A-Z][A-Za-z0-9&.,\-\s]{2,80})(?=$|\n)',
-        r'(?i)\b([A-Z][A-Za-z0-9&.,\-\s]{2,80})\s+(?:is\s+hiring|seeks|is\s+looking|invites\sapplications)',
+        # Fixed: Make the first pattern more flexible - remove strict end requirement
+        r'(?i)\b(?:company|organization|employer)\s*[:\-]\s*([A-Z][A-Za-z0-9&.,\-\s]{2,80}?)(?=\s*\n|\s*$|\s*Location:)',
+        r'(?i)\b([A-Z][A-Za-z0-9&.,\-\s]{2,80})\s+(?:is\s+hiring|seeks|is\s+looking|invites\sapplications|is\s+on\s+the\s+lookout)',
         r'(?i)(?:at|with|for|@)\s*([A-Z][A-Za-z0-9&.\-]+(?:\s+[A-Z][A-Za-z0-9&.\-]+)*)',
         r'(?i)\b(?:join|work\s+at)\s+([A-Z][A-Za-z0-9&.,\-\s]{2,80})[\'’]?(?:\s+team|\s+company|$)',
     ]
@@ -169,8 +173,12 @@ def extract_company_name(text: str) -> Optional[str]:
                 if "company" in company.lower():
                     continue
 
-                # ✅ Validate length
-                if 2 <= len(company) <= 60:
+                # ✅ Reject very short fragments (likely extraction errors)
+                if len(company) < 3:
+                    continue
+
+                # ✅ Validate it looks like a real company name
+                if 3 <= len(company) <= 60 and re.search(r'[A-Za-z]', company):
                     return company
         except Exception:
             continue
@@ -178,44 +186,48 @@ def extract_company_name(text: str) -> Optional[str]:
     return None
 
 
-
-
 def extract_location(text: str) -> Optional[str]:
     """Extract location (supports city/state/country and remote)."""
-    if not isinstance(text, str):
-        return None
-    
-    if not text.strip():
+    if not isinstance(text, str) or not text.strip():
         return None
 
-    # Limit to first 10 lines for better performance
-    text = '\n'.join(text.splitlines()[:10]).strip()
-
-    patterns = [
-        r'(?i)(?:location|based in|office in)\s*[:\-]?\s*([A-Za-z\s]+,\s*[A-Za-z]{2,})(?=\s*(?:Employment|Job|Salary|About|\n|$))',
-        r'(?i)([A-Za-z\s]+,\s*[A-Z]{2}(?:\s+\d{5,})?)(?!\s*(?:Department|Team|Division))',
-        r'(?i)\b(?:in|at)\s+([A-Za-z\s]+,\s*[A-Za-z]{2,})',
-        r'(?i)(?:location|based in|office in)\s*[:\-]?\s*([A-Za-z\s]{3,50})(?=\s*(?:Employment|Job|Salary|About|\n|$))'
-    ]
-
-    for pattern in patterns:
-        try:
-            match = re.search(pattern, text)
-            if match:
-                location = match.group(1).strip()
-                if 3 < len(location) < 100:
-                    return location
-        except Exception:
-            continue
-
-    # Remote check
+    # First, check for an explicit "Location:" tag
     try:
-        if re.search(r'\b(remote|work from home|hybrid)\b', text, re.IGNORECASE):
-            return "Remote"
+        # This pattern looks for "Location:" and captures the rest of the line
+        match = re.search(r'(?i)\bLocation\s*:\s*(.*)', text)
+        if match:
+            location = match.group(1).strip()
+            # Check if the extracted part is just the word remote
+            if 'remote' in location.lower():
+                return "Remote"
+            if 3 < len(location) < 100:
+                return location
     except Exception:
         pass
 
+    
+    pattern = r'(?i)^\s*Location\s*:\s*(.+)'
+    try:
+        match = re.search(pattern, text, re.MULTILINE)
+        if match:
+            location_detail = match.group(1).strip()
+            if location_detail: # Ensure it's not an empty string
+                return location_detail
+    except Exception:
+        pass
+
+    # If the above fails, check for the word "remote" anywhere
+    try:
+        if re.search(r'\b(remote|work from home|anywhere)\b', text, re.IGNORECASE):
+            return "Remote"
+    except Exception:
+        pass
+    
+    # Add your other, more complex patterns here as a fallback
+    # ...
+
     return None
+   #return None
 
 
 def extract_job_type(text_lower: str) -> str:
@@ -283,6 +295,7 @@ def extract_requirements(text: str) -> Optional[str]:
         r'(?i)(?:requirements?|qualifications?|must have):(.*?)(?:\n\n|\n[A-Z]|$)',
         r'(?i)(?:you should have|you need|required skills?|minimum requirements?):(.*?)(?:\n\n|\n[A-Z]|$)',
         r'(?i)(?:requirements?|qualifications?|must have)[:\-]?\s*\n(.*?)(?:\n\n|\n[A-Z]|$)',
+        r'(?i)(?:Requirements?|Qualifications?|What you\'ll need)[:\s\n]+(.*?)(?=\n\s*(?:Preferred|Perks|Benefits|Responsibilities|About Us|To Apply|$))'
     ]
     
     for pattern in patterns:
