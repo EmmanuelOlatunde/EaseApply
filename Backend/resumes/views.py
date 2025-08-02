@@ -1,6 +1,5 @@
 # resumes/views.py
 import logging
-from rest_framework.views import APIView
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -24,7 +23,7 @@ class ResumeListCreateView(generics.ListCreateAPIView):
     API endpoint for listing user's resumes and creating new ones
     
     GET /resumes/ - List authenticated user's resumes
-    POST /resumes/upload/ - Upload and create new resume with text extraction and parsing
+    POST /resumes/ - Upload and create new resume  # Updated endpoint
     """
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
@@ -67,13 +66,17 @@ class ResumeListCreateView(generics.ListCreateAPIView):
         try:
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            # Return detailed serializer data instead of upload serializer
+            instance = serializer.instance
+            detail_serializer = ResumeDetailSerializer(instance, context={'request': request})
+            return Response(detail_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         except Exception as e:
             logger.error(f"Resume upload failed for user {request.user.id}: {str(e)}")
             return Response(
                 {'error': 'Failed to upload resume. Please try again.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
 
 class ResumeDetailView(generics.RetrieveAPIView):
     """
@@ -145,33 +148,6 @@ class ResumeAnalyticsView(generics.ListAPIView):
     def get_queryset(self):
         """Return only the authenticated user's resumes"""
         return Resume.objects.filter(user=self.request.user).order_by('-uploaded_at')
-
-class ResumeUploadView(APIView):
-    """
-    Alternative API endpoint for resume upload
-    """
-    permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
-
-    def post(self, request, *args, **kwargs):
-        try:
-            serializer = ResumeUploadSerializer(
-                data=request.data,
-                context={'request': request}
-            )
-            if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            resume = serializer.save(user=request.user)
-            return Response(
-                ResumeDetailSerializer(resume, context={'request': request}).data,
-                status=status.HTTP_201_CREATED
-            )
-        except Exception as e:
-            logger.error(f"Resume upload failed for user {request.user.id}: {str(e)}")
-            return Response(
-                {'error': 'Invalid request format. Please use multipart/form-data.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
 # Function-based views (alternatives to class-based views)
 

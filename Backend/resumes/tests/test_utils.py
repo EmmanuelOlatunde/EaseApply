@@ -375,3 +375,41 @@ class FileValidationTestCase(TextExtractionUtilsTestCase):
     #     file_type, is_valid = validate_resume_file(doc_file)
         
     #     self.assertEqual(file_type, '
+
+class IncompleteFileValidationTestCase(TestCase):
+    """Complete the incomplete test from test_utils.py"""
+    
+    def test_validate_resume_file_valid_doc(self):
+        """Test validation of valid DOC file - completing the incomplete test"""
+        doc_file = SimpleUploadedFile(
+            "resume.doc", 
+            b'fake doc content',
+            content_type="application/msword"
+        )
+        
+        file_type, is_valid = validate_resume_file(doc_file)
+        
+        self.assertEqual(file_type, 'docx')  # DOC files are treated as DOCX
+        self.assertTrue(is_valid)
+    
+    def test_validate_resume_file_unsupported_extensions(self):
+        """Test validation with various unsupported file extensions"""
+        unsupported_files = [
+            ("resume.txt", "text/plain"),
+            ("resume.jpg", "image/jpeg"),
+            ("resume.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            ("resume.ppt", "application/vnd.ms-powerpoint"),
+            ("resume.zip", "application/zip"),
+        ]
+        
+        for filename, content_type in unsupported_files:
+            with self.subTest(filename=filename):
+                unsupported_file = SimpleUploadedFile(
+                    filename,
+                    b'fake content',
+                    content_type=content_type
+                )
+                
+                file_type, is_valid = validate_resume_file(unsupported_file)
+                self.assertEqual(file_type, '')
+                self.assertFalse(is_valid)

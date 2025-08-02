@@ -121,7 +121,7 @@ class ResumeListCreateViewTestCase(ResumeViewTestCase):
             content_type="application/pdf"
         )
         
-        url = reverse('resumes:resume-upload')
+        url = reverse('resumes:resume-list-create')
         data = {'file': pdf_file}
         response = self.client.post(url, data, format='multipart')
         
@@ -144,7 +144,7 @@ class ResumeListCreateViewTestCase(ResumeViewTestCase):
             content_type="text/plain"
         )
         
-        url = reverse('resumes:resume-upload')
+        url = reverse('resumes:resume-list-create')
         data = {'file': invalid_file}
         response = self.client.post(url, data, format='multipart')
         
@@ -155,7 +155,7 @@ class ResumeListCreateViewTestCase(ResumeViewTestCase):
         """Test upload without file"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(self.jwt_token1)}')
         
-        url = reverse('resumes:resume-upload')
+        url = reverse('resumes:resume-list-create')
         response = self.client.post(url, {}, format='multipart')
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -169,7 +169,7 @@ class ResumeListCreateViewTestCase(ResumeViewTestCase):
             content_type="application/pdf"
         )
         
-        url = reverse('resumes:resume-upload')
+        url = reverse('resumes:resume-list-create')
         data = {'file': pdf_file}
         response = self.client.post(url, data, format='multipart')
         
@@ -188,7 +188,7 @@ class ResumeListCreateViewTestCase(ResumeViewTestCase):
             content_type="application/pdf"
         )
         
-        url = reverse('resumes:resume-upload')
+        url = reverse('resumes:resume-list-create')
         data = {'file': pdf_file}
         response = self.client.post(url, data, format='multipart')
         
@@ -211,7 +211,7 @@ class ResumeListCreateViewTestCase(ResumeViewTestCase):
             content_type="application/pdf"
         )
         
-        url = reverse('resumes:resume-upload')
+        url = reverse('resumes:resume-list-create')
         data = {'file': large_file}
         response = self.client.post(url, data, format='multipart')
         
@@ -365,7 +365,7 @@ class ResumeViewPermissionTestCase(ResumeViewTestCase):
         
         # Test upload endpoint
         pdf_file = SimpleUploadedFile("test.pdf", b'content', content_type="application/pdf")
-        upload_url = reverse('resumes:resume-upload')
+        upload_url = reverse('resumes:resume-list-create')
         response = self.client.post(upload_url, {'file': pdf_file}, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -382,7 +382,7 @@ class ResumeViewErrorHandlingTestCase(ResumeViewTestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(self.jwt_token1)}')
         
         pdf_file = SimpleUploadedFile("test.pdf", b'content', content_type="application/pdf")
-        url = reverse('resumes:resume-upload')
+        url = reverse('resumes:resume-list-create')
         response = self.client.post(url, {'file': pdf_file}, format='multipart')
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -398,7 +398,7 @@ class ResumeViewErrorHandlingTestCase(ResumeViewTestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(self.jwt_token1)}')
 
         pdf_file = SimpleUploadedFile("test.pdf", b'content', content_type="application/pdf")
-        url = reverse('resumes:resume-upload')
+        url = reverse('resumes:resume-list-create')
         response = self.client.post(url, {'file': pdf_file}, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -413,7 +413,7 @@ class ResumeViewContentTypeTestCase(ResumeViewTestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(self.jwt_token1)}')
         
         # Try to send file as JSON (should fail)
-        url = reverse('resumes:resume-upload')
+        url = reverse('resumes:resume-list-create')
         response = self.client.post(url, {'file': 'not_a_file'}, format='json')
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
         #self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -422,7 +422,7 @@ class ResumeViewContentTypeTestCase(ResumeViewTestCase):
     def test_supported_file_types(self, mock_extract):
         mock_extract.return_value = "Mocked extracted text"
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(self.jwt_token1)}')
-        url = reverse('resumes:resume-upload')
+        url = reverse('resumes:resume-list-create')
         
         # Test PDF
         pdf_file = SimpleUploadedFile(
@@ -462,7 +462,7 @@ class ResumeViewIntegrationTestCase(ResumeViewTestCase):
             content_type="application/pdf"
         )
         
-        upload_url = reverse('resumes:resume-upload')
+        upload_url = reverse('resumes:resume-list-create')
         upload_response = self.client.post(upload_url, {'file': pdf_file}, format='multipart')
         
         self.assertEqual(upload_response.status_code, status.HTTP_201_CREATED)
@@ -503,7 +503,7 @@ class ResumeViewIntegrationTestCase(ResumeViewTestCase):
             content_type="application/pdf"
         )
         
-        url = reverse('resumes:resume-upload')
+        url = reverse('resumes:resume-list-create')
         response = self.client.post(url, {'file': pdf_file}, format='multipart')
         
         if response.status_code == status.HTTP_201_CREATED:

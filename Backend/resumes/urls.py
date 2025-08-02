@@ -10,7 +10,6 @@ urlpatterns = [
     path('<uuid:resume_id>/', views.ResumeDetailView.as_view(), name='resume-detail'),
     path('<uuid:resume_id>/reparse/', views.ResumeReparseView.as_view(), name='resume-reparse'),
     path('analytics/', views.ResumeAnalyticsView.as_view(), name='resume-analytics'),
-    path('upload/', views.ResumeUploadView.as_view(), name='resume-upload'),
     
     # Function-based views (alternative endpoints)
     # path('api/upload/', views.upload_resume, name='upload-resume-func'),

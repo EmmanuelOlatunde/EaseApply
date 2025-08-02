@@ -51,16 +51,16 @@ class Resume(models.Model):
     skills = models.JSONField(default=list, blank=True)
     
     # Work experience (stored as JSON array of objects)
-    work_experience = models.JSONField(default=list, blank=True)
+    work_experience = models.JSONField(default=list, blank=True, null=True,)
     
     # Education (stored as JSON array of objects)
     education = models.JSONField(default=list, blank=True)
     
     # Certifications (stored as JSON array)
-    certifications = models.JSONField(default=list, blank=True)
+    certifications = models.JSONField(default=list, blank=True, null=True,)
     
     # Projects (stored as JSON array of objects)
-    projects = models.JSONField(default=list, blank=True)
+    projects = models.JSONField(default=list, blank=True, null=True,)
     
     # Parsing status
     is_parsed = models.BooleanField(default=False)

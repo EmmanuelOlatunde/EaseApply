@@ -1,5 +1,7 @@
 import logging
 from django.utils import timezone
+import os
+import urllib.parse
 from rest_framework import serializers
 from django.core.files.uploadedfile import UploadedFile
 from .models import Resume
@@ -60,16 +62,20 @@ class ResumeUploadSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         file = validated_data['file']
         file_type = self.context.get('file_type')
-        
+
+        # Sanitize the original filename
+        decoded_name = urllib.parse.unquote(file.name)
+        safe_filename = os.path.basename(decoded_name)
+
         # Create resume instance
         resume = Resume(
             user=request.user,
             file=file,
-            original_filename=file.name,
+            original_filename=safe_filename,
             file_type=file_type,
             file_size=file.size
         )
-        
+            
         # Extract text from the file
         try:
             extracted_text = extract_text_from_resume(file, file_type)

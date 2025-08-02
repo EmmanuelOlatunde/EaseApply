@@ -17,32 +17,32 @@ class ResumeURLTestCase(TestCase):
         """Test resume list/create URL pattern"""
         # Test with trailing slash
         url = reverse('resumes:resume-list-create')
-        self.assertEqual(url, '/resumes/')
+        self.assertEqual(url, '/api/resumes/')
         
         # Test URL resolution
-        resolved = resolve('/resumes/')
+        resolved = resolve('/api/resumes/')
         self.assertEqual(resolved.view_name, 'resumes:resume-list-create')
         self.assertEqual(resolved.func.view_class, ResumeListCreateView)
     
     def test_resume_upload_url(self):
         """Test resume upload URL pattern"""
-        url = reverse('resumes:resume-upload')
-        self.assertEqual(url, '/resumes/upload/')
+        url = reverse('resumes:resume-list-create')
+        self.assertEqual(url, '/api/resumes/')
         
         # Test URL resolution
-        resolved = resolve('/resumes/upload/')
-        self.assertEqual(resolved.view_name, 'resumes:resume-upload')
+        resolved = resolve('/api/resumes/')
+        self.assertEqual(resolved.view_name, 'resumes:resume-list-create')
         self.assertEqual(resolved.func.view_class, ResumeListCreateView)
     
     def test_resume_detail_url(self):
         """Test resume detail URL pattern with UUID"""
         test_uuid = uuid.uuid4()
         url = reverse('resumes:resume-detail', kwargs={'resume_id': test_uuid})
-        expected_url = f'/resumes/{test_uuid}/'
+        expected_url = f'/api/resumes/{test_uuid}/'
         self.assertEqual(url, expected_url)
         
         # Test URL resolution
-        resolved = resolve(f'/resumes/{test_uuid}/')
+        resolved = resolve(f'/api/resumes/{test_uuid}/')
         self.assertEqual(resolved.view_name, 'resumes:resume-detail')
         self.assertEqual(resolved.func.view_class, ResumeDetailView)
         self.assertEqual(resolved.kwargs['resume_id'], test_uuid)
@@ -52,9 +52,9 @@ class ResumeURLTestCase(TestCase):
         # This would be caught by Django's URL pattern matching
         # Invalid UUIDs won't match the UUID pattern
         invalid_urls = [
-            '/resumes/not-a-uuid/',
-            '/resumes/123/',
-            '/resumes/invalid-uuid-format/',
+            '/api/resumes/not-a-uuid/',
+            '/api/resumes/123/',
+            '/api/resumes/invalid-uuid-format/',
         ]
         
         for invalid_url in invalid_urls:
@@ -70,8 +70,8 @@ class ResumeURLTestCase(TestCase):
         """Test that URLs are properly namespaced"""
         # All URLs should be in the 'resumes' namespace
         urls_to_test = [
-            ('resumes:resume-list-create', '/resumes/'),
-            ('resumes:resume-upload', '/resumes/upload/'),
+            ('resumes:resume-list-create', '/api/resumes/'),
+            ('resumes:resume-list-create', '/api/resumes/'),
         ]
         
         for url_name, expected_path in urls_to_test:
@@ -85,9 +85,9 @@ class ResumeURLTestCase(TestCase):
         
         # These should all resolve properly
         urls_with_slash = [
-            '/resumes/',
-            '/resumes/upload/',
-            f'/resumes/{test_uuid}/',
+            '/api/resumes/',
+            '/api/resumes/',
+            f'/api/resumes/{test_uuid}/',
         ]
         
         for url in urls_with_slash:
@@ -142,7 +142,7 @@ class ResumeURLIntegrationTestCase(APITestCase):
         """Test accessing resume upload endpoint"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {str(self.jwt_token)}')
         
-        url = reverse('resumes:resume-upload')
+        url = reverse('resumes:resume-list-create')
         # Just test that the endpoint is accessible (POST without file will return 400)
         response = self.client.post(url, {})
         
@@ -172,7 +172,7 @@ class ResumeURLIntegrationTestCase(APITestCase):
         self.assertEqual(response.status_code, 401)
         
         # Test upload endpoint
-        upload_url = reverse('resumes:resume-upload')
+        upload_url = reverse('resumes:resume-list-create')
         response = self.client.post(upload_url, {})
         self.assertEqual(response.status_code, 401)
 
@@ -182,7 +182,7 @@ class ResumeURLParameterTestCase(TestCase):
     def test_uuid_parameter_extraction(self):
         """Test that UUID parameters are correctly extracted"""
         test_uuid = uuid.uuid4()
-        url = f'/resumes/{test_uuid}/'
+        url = f'/api/resumes/{test_uuid}/'
         
         resolved = resolve(url)
         self.assertEqual(resolved.kwargs['resume_id'], test_uuid)
@@ -191,7 +191,7 @@ class ResumeURLParameterTestCase(TestCase):
     def test_uuid_parameter_validation(self):
         """Test UUID parameter validation"""
         valid_uuid = uuid.uuid4()
-        valid_url = f'/resumes/{valid_uuid}/'
+        valid_url = f'/api/resumes/{valid_uuid}/'
         
         # Valid UUID should resolve
         try:
@@ -210,7 +210,7 @@ class ResumeURLParameterTestCase(TestCase):
         ]
         
         for invalid_uuid in invalid_uuids:
-            invalid_url = f'/resumes/{invalid_uuid}/'
+            invalid_url = f'/api/resumes/{invalid_uuid}/'
             try:
                 resolved = resolve(invalid_url)
                 # If it resolves, it shouldn't be our resume detail view
@@ -222,7 +222,7 @@ class ResumeURLParameterTestCase(TestCase):
     def test_url_kwargs_naming(self):
         """Test that URL kwargs use correct parameter names"""
         test_uuid = uuid.uuid4()
-        url = f'/resumes/{test_uuid}/'
+        url = f'/api/resumes/{test_uuid}/'
         
         resolved = resolve(url)
         
@@ -239,7 +239,7 @@ class ResumeURLReverseTestCase(TestCase):
         
         # Should be able to reverse with UUID
         url = reverse('resumes:resume-detail', kwargs={'resume_id': test_uuid})
-        expected = f'/resumes/{test_uuid}/'
+        expected = f'/api/resumes/{test_uuid}/'
         self.assertEqual(url, expected)
         
         # Should be able to reverse with string representation of UUID
@@ -250,10 +250,10 @@ class ResumeURLReverseTestCase(TestCase):
         """Test URL reversal for endpoints that don't need parameters"""
         # List/create endpoints don't need parameters
         list_url = reverse('resumes:resume-list-create')
-        self.assertEqual(list_url, '/resumes/')
+        self.assertEqual(list_url, '/api/resumes/')
         
-        upload_url = reverse('resumes:resume-upload')
-        self.assertEqual(upload_url, '/resumes/upload/')
+        upload_url = reverse('resumes:resume-list-create')
+        self.assertEqual(upload_url, '/api/resumes/')
     
     def test_reverse_with_missing_parameters(self):
         """Test that URL reversal fails when required parameters are missing"""
@@ -289,13 +289,13 @@ class ResumeAppURLConfigTestCase(TestCase):
         """Test that app_name is properly configured"""
         # This tests that the app_name is set in urls.py
         url = reverse('resumes:resume-list-create')
-        self.assertTrue(url.startswith('/resumes'))
+        self.assertTrue(url.startswith('/api/resumes'))
     
     def test_all_view_patterns_included(self):
         """Test that all expected URL patterns are included"""
         expected_patterns = [
             'resumes:resume-list-create',
-            'resumes:resume-upload', 
+            'resumes:resume-list-create', 
             'resumes:resume-detail',
         ]
         
@@ -319,12 +319,12 @@ class ResumeAppURLConfigTestCase(TestCase):
         # In our case, 'upload/' should come before '' (list/create)
         
         # Test that upload/ is accessible
-        upload_url = reverse('resumes:resume-upload')
-        self.assertEqual(upload_url, '/resumes/upload/')
+        upload_url = reverse('resumes:resume-list-create')
+        self.assertEqual(upload_url, '/api/resumes/')
         
         # Test that it resolves to the correct view
-        resolved = resolve('/resumes/upload/')
-        self.assertEqual(resolved.view_name, 'resumes:resume-upload')
+        resolved = resolve('/api/resumes/')
+        self.assertEqual(resolved.view_name, 'resumes:resume-list-create')
     
     def test_http_methods_allowed(self):
         """Test that correct HTTP methods are allowed for each endpoint"""
@@ -334,16 +334,16 @@ class ResumeAppURLConfigTestCase(TestCase):
         client = Client()
         
         # Test that GET is allowed on list endpoint (will return 401 without auth)
-        response = client.get('/resumes/')
+        response = client.get('/api/resumes/')
         self.assertNotEqual(response.status_code, 405)  # Method not allowed
         
         # Test that POST is allowed on upload endpoint
-        response = client.post('/resumes/upload/')
+        response = client.post('/api/resumes/')
         self.assertNotEqual(response.status_code, 405)
         
         # Test that GET is allowed on detail endpoint
         test_uuid = uuid.uuid4()
-        response = client.get(f'/resumes/{test_uuid}/')
+        response = client.get(f'/api/resumes/{test_uuid}/')
         self.assertNotEqual(response.status_code, 405)
 
 class ResumeURLSecurityTestCase(APITestCase):
@@ -419,7 +419,7 @@ class ResumeURLSecurityTestCase(APITestCase):
         for malicious_input in malicious_inputs:
             try:
                 # Try to construct URL - should either fail or not match our pattern
-                malicious_url = f'/resumes/{malicious_input}/'
+                malicious_url = f'/api/resumes/{malicious_input}/'
                 resolved = resolve(malicious_url)
                 
                 # If it resolves, it shouldn't be our resume detail view
@@ -436,7 +436,7 @@ class ResumeURLPerformanceTestCase(TestCase):
         import time
         
         test_uuid = uuid.uuid4()
-        url = f'/resumes/{test_uuid}/'
+        url = f'/api/resumes/{test_uuid}/'
         
         # Time URL resolution
         start_time = time.time()
@@ -473,19 +473,19 @@ class ResumeURLCompatibilityTestCase(TestCase):
         test_uuid = uuid.uuid4()
         
         # Lowercase should work
-        lower_url = f'/resumes/{str(test_uuid).lower()}/'
+        lower_url = f'/api/resumes/{str(test_uuid).lower()}/'
         resolved_lower = resolve(lower_url)
         self.assertEqual(resolved_lower.view_name, 'resumes:resume-detail')
         
         # Uppercase should also work (UUIDs are case-insensitive in our pattern)
-        upper_url = f'/resumes/{str(test_uuid).upper()}/'
+        upper_url = f'/api/resumes/{str(test_uuid).upper()}/'
         resolved_upper = resolve(upper_url)
         self.assertEqual(resolved_upper.view_name, 'resumes:resume-detail')
     
     def test_unicode_handling(self):
         """Test that URLs handle Unicode properly"""
         # Our URLs use UUIDs which are ASCII, but test the framework
-        url = '/resumes/'
+        url = '/api/resumes/'
         
         # Should handle international characters in query params gracefully
         # (though our API doesn't use query params, test the framework)
@@ -519,17 +519,17 @@ class ResumeURLDocumentationTestCase(TestCase):
             'List resumes': {
                 'method': 'GET',
                 'url': reverse('resumes:resume-list-create'),
-                'expected': '/resumes/',
+                'expected': '/api/resumes/',
             },
             'Upload resume': {
                 'method': 'POST', 
-                'url': reverse('resumes:resume-upload'),
-                'expected': '/resumes/upload/',
+                'url': reverse('resumes:resume-list-create'),
+                'expected': '/api/resumes/',
             },
             'Get resume detail': {
                 'method': 'GET',
                 'url': reverse('resumes:resume-detail', kwargs={'resume_id': uuid.uuid4()}),
-                'expected_pattern': r'/resumes/[0-9a-f-]{36}/',
+                'expected_pattern': r'/api/resumes/[0-9a-f-]{36}/',
             },
         }
         
@@ -546,7 +546,7 @@ class ResumeURLDocumentationTestCase(TestCase):
         # URL names should be descriptive and follow kebab-case
         url_names = [
             'resumes:resume-list-create',
-            'resumes:resume-upload',
+            'resumes:resume-list-create',
             'resumes:resume-detail',
         ]
         
