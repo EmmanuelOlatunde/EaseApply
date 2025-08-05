@@ -62,7 +62,7 @@ const props = defineProps({
   },
   accept: {
     type: String,
-    default: '.pdf'
+    default: '.pdf,.docx'
   },
   acceptText: {
     type: String,
@@ -103,10 +103,15 @@ const validateAndSetFile = (file) => {
   if (!file) return
   
   // Validate file type
-  if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
-    error.value = 'Please select a PDF file'
+  const allowedExtensions = ['.pdf', '.docx']
+  const fileName = file.name.toLowerCase()
+  const isValidType = allowedExtensions.some(ext => fileName.endsWith(ext))
+
+  if (!isValidType) {
+    error.value = 'Please select a PDF or DOCX file'
     return
   }
+
   
   // Validate file size
   if (file.size > props.maxSize) {

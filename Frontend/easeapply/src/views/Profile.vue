@@ -83,12 +83,13 @@
             <form @submit.prevent="updateProfile" class="space-y-6">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="block text-sm font-medium text-ash-700 mb-2">Full Name</label>
+                  <label class="block text-sm font-medium text-ash-700 mb-2">Username</label>
                   <input
-                    v-model="profileForm.fullName"
+                    v-model="profileForm.username"
                     type="text"
                     class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter your full name"
+                    placeholder="Enter your username"
+                    required
                   />
                 </div>
                 
@@ -97,8 +98,32 @@
                   <input
                     v-model="profileForm.email"
                     type="email"
-                    class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-ash-50"
                     placeholder="Enter your email"
+                    readonly
+                  />
+                  <p class="text-xs text-ash-500 mt-1">Email cannot be changed</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-ash-700 mb-2">First Name</label>
+                  <input
+                    v-model="profileForm.first_name"
+                    type="text"
+                    class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter your first name"
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-ash-700 mb-2">Last Name</label>
+                  <input
+                    v-model="profileForm.last_name"
+                    type="text"
+                    class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter your last name"
                   />
                 </div>
               </div>
@@ -114,30 +139,24 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-ash-700 mb-2">Professional Title</label>
+                <label class="block text-sm font-medium text-ash-700 mb-2">Date of Birth</label>
                 <input
-                  v-model="profileForm.title"
-                  type="text"
+                  v-model="profileForm.date_of_birth"
+                  type="date"
                   class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., Senior Software Engineer"
                 />
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-ash-700 mb-2">Industry</label>
-                <select
-                  v-model="profileForm.industry"
+                <label class="block text-sm font-medium text-ash-700 mb-2">Bio</label>
+                <textarea
+                  v-model="profileForm.bio"
+                  rows="4"
                   class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select Industry</option>
-                  <option value="technology">Technology</option>
-                  <option value="finance">Finance</option>
-                  <option value="healthcare">Healthcare</option>
-                  <option value="education">Education</option>
-                  <option value="marketing">Marketing</option>
-                  <option value="consulting">Consulting</option>
-                  <option value="other">Other</option>
-                </select>
+                  placeholder="Tell us about yourself (max 500 characters)"
+                  maxlength="500"
+                ></textarea>
+                <p class="text-xs text-ash-500 mt-1">{{ profileForm.bio.length }}/500 characters</p>
               </div>
 
               <div v-if="profileError" class="text-red-600 text-sm">{{ profileError }}</div>
@@ -164,30 +183,33 @@
               <div>
                 <label class="block text-sm font-medium text-ash-700 mb-2">Current Password</label>
                 <input
-                  v-model="passwordForm.currentPassword"
+                  v-model="passwordForm.old_password"
                   type="password"
                   class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter current password"
+                  required
                 />
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-ash-700 mb-2">New Password</label>
                 <input
-                  v-model="passwordForm.newPassword"
+                  v-model="passwordForm.new_password"
                   type="password"
                   class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter new password"
+                  required
                 />
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-ash-700 mb-2">Confirm New Password</label>
                 <input
-                  v-model="passwordForm.confirmPassword"
+                  v-model="passwordForm.new_password_confirm"
                   type="password"
                   class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Confirm new password"
+                  required
                 />
               </div>
 
@@ -298,24 +320,26 @@ const router = useRouter()
 
 const activeTab = ref('profile')
 
-// Profile form
+// Profile form - updated to match API schema
 const profileForm = ref({
-  fullName: '',
+  username: '',
   email: '',
+  first_name: '',
+  last_name: '',
   phone: '',
-  title: '',
-  industry: ''
+  date_of_birth: '',
+  bio: ''
 })
 
 const isUpdatingProfile = ref(false)
 const profileError = ref('')
 const profileSuccess = ref('')
 
-// Password form
+// Password form - updated to match API schema
 const passwordForm = ref({
-  currentPassword: '',
-  newPassword: '',
-  confirmPassword: ''
+  old_password: '',
+  new_password: '',
+  new_password_confirm: ''
 })
 
 const isChangingPassword = ref(false)
@@ -347,13 +371,20 @@ const updateProfile = async () => {
   isUpdatingProfile.value = true
 
   try {
-    await authStore.updateProfile({
-      full_name: profileForm.value.fullName,
-      email: profileForm.value.email,
+    // Create payload with only the fields that can be updated
+    const payload = {
+      username: profileForm.value.username,
+      first_name: profileForm.value.first_name,
+      last_name: profileForm.value.last_name,
       phone: profileForm.value.phone,
-      title: profileForm.value.title,
-      industry: profileForm.value.industry
-    })
+      date_of_birth: profileForm.value.date_of_birth || null,
+      bio: profileForm.value.bio
+    }
+
+    const response = await authAPI.updateProfile(payload)
+    
+    // Update the user in the store
+    authStore.user = { ...authStore.user, ...response.data }
     
     profileSuccess.value = 'Profile updated successfully!'
     
@@ -362,7 +393,19 @@ const updateProfile = async () => {
     }, 3000)
     
   } catch (err) {
-    profileError.value = err.response?.data?.message || 'Failed to update profile'
+    console.error('Profile update error:', err)
+    if (err.response?.data) {
+      // Handle validation errors
+      const errors = err.response.data
+      if (typeof errors === 'object') {
+        const errorMessages = Object.values(errors).flat().join(', ')
+        profileError.value = errorMessages
+      } else {
+        profileError.value = errors.message || 'Failed to update profile'
+      }
+    } else {
+      profileError.value = 'Failed to update profile'
+    }
   } finally {
     isUpdatingProfile.value = false
   }
@@ -372,12 +415,12 @@ const changePassword = async () => {
   passwordError.value = ''
   passwordSuccess.value = ''
 
-  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+  if (passwordForm.value.new_password !== passwordForm.value.new_password_confirm) {
     passwordError.value = 'New passwords do not match'
     return
   }
 
-  if (passwordForm.value.newPassword.length < 8) {
+  if (passwordForm.value.new_password.length < 8) {
     passwordError.value = 'New password must be at least 8 characters long'
     return
   }
@@ -386,15 +429,16 @@ const changePassword = async () => {
 
   try {
     await authAPI.changePassword({
-      old_password: passwordForm.value.currentPassword,
-      new_password: passwordForm.value.newPassword
+      old_password: passwordForm.value.old_password,
+      new_password: passwordForm.value.new_password,
+      new_password_confirm: passwordForm.value.new_password_confirm
     })
     
     passwordSuccess.value = 'Password changed successfully!'
     passwordForm.value = {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
+      old_password: '',
+      new_password: '',
+      new_password_confirm: ''
     }
     
     setTimeout(() => {
@@ -402,7 +446,18 @@ const changePassword = async () => {
     }, 3000)
     
   } catch (err) {
-    passwordError.value = err.response?.data?.message || 'Failed to change password'
+    console.error('Password change error:', err)
+    if (err.response?.data) {
+      const errors = err.response.data
+      if (typeof errors === 'object') {
+        const errorMessages = Object.values(errors).flat().join(', ')
+        passwordError.value = errorMessages
+      } else {
+        passwordError.value = errors.message || 'Failed to change password'
+      }
+    } else {
+      passwordError.value = 'Failed to change password'
+    }
   } finally {
     isChangingPassword.value = false
   }
@@ -414,10 +469,8 @@ const updatePreferences = async () => {
   isUpdatingPreferences.value = true
 
   try {
-    // This would typically be an API call
-    // await api.updatePreferences(preferencesForm.value)
-    
-    // For now, just simulate success
+    // This would typically be an API call to update user preferences
+    // Since there's no preference endpoint in your API, we'll simulate it
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     preferencesSuccess.value = 'Preferences updated successfully!'
@@ -433,16 +486,41 @@ const updatePreferences = async () => {
   }
 }
 
+// Load user profile data
+const loadProfile = async () => {
+  try {
+    const response = await authAPI.getProfile()
+    const userData = response.data
+    
+    profileForm.value = {
+      username: userData.username || '',
+      email: userData.email || '',
+      first_name: userData.first_name || '',
+      last_name: userData.last_name || '',
+      phone: userData.phone || '',
+      date_of_birth: userData.date_of_birth || '',
+      bio: userData.bio || ''
+    }
+  } catch (err) {
+    console.error('Failed to load profile:', err)
+  }
+}
+
 onMounted(() => {
-  // Load current user data
+  // Load current user data from store or API
   if (authStore.user) {
     profileForm.value = {
-      fullName: authStore.user.full_name || '',
+      username: authStore.user.username || '',
       email: authStore.user.email || '',
+      first_name: authStore.user.first_name || '',
+      last_name: authStore.user.last_name || '',
       phone: authStore.user.phone || '',
-      title: authStore.user.title || '',
-      industry: authStore.user.industry || ''
+      date_of_birth: authStore.user.date_of_birth || '',
+      bio: authStore.user.bio || ''
     }
+  } else {
+    // Load from API if not in store
+    loadProfile()
   }
 })
 </script>

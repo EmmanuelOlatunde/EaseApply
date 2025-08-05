@@ -1,97 +1,125 @@
-# resumes/admin.py
 from django.contrib import admin
 from django.utils.html import format_html
-from django.urls import reverse
 from .models import Resume
 
 @admin.register(Resume)
 class ResumeAdmin(admin.ModelAdmin):
     list_display = [
-        'id', 'user_link', 'original_filename', 'file_type', 
-        'file_size_mb', 'has_extracted_text', 'uploaded_at'
+        'original_filename', 'user_email', 'full_name', 
+        'file_type', 'file_size_display', 'is_parsed', 
+        'skills_count', 'uploaded_at'
     ]
-    list_filter = ['file_type', 'uploaded_at', 'user']
-    search_fields = ['original_filename', 'user__username', 'user__email']
+    list_filter = [
+        'file_type', 'is_parsed', 'uploaded_at', 'parsed_at'
+    ]
+    search_fields = [
+        'user__email', 'user__username', 'original_filename', 
+        'full_name', 'contact_info__email'
+    ]
     readonly_fields = [
-        'id', 'file_size', 'uploaded_at', 'updated_at', 
-        'extracted_text_preview'
+        'id', 'uploaded_at', 'updated_at', 'parsed_at', 
+        'file_size', 'file_url_display'
     ]
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('id', 'user', 'original_filename', 'file_type')
+            'fields': ('id', 'user', 'original_filename', 'file_type', 'file_size')
         }),
-        ('File Details', {
-            'fields': ('file', 'file_size', 'uploaded_at', 'updated_at')
+        ('File', {
+            'fields': ('file', 'file_url_display')
         }),
-        ('Extracted Content', {
-            'fields': ('extracted_text_preview',),
+        ('Parsed Data', {
+            'fields': (
+                'full_name', 'summary', 'contact_info', 'skills',
+                'work_experience', 'education', 'certifications', 'projects'
+            ),
             'classes': ('collapse',)
         }),
+        ('Text Content', {
+            'fields': ('extracted_text',),
+            'classes': ('collapse',)
+        }),
+        ('Processing Status', {
+            'fields': ('is_parsed', 'parsing_error', 'parsed_at')
+        }),
+        ('Timestamps', {
+            'fields': ('uploaded_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
     )
     
-    def user_link(self, obj):
-        """Create a link to the user's admin page"""
-        url = reverse('admin:auth_user_change', args=[obj.user.pk])
-        return format_html('<a href="{}">{}</a>', url, obj.user.username)
-    user_link.short_description = 'User'
+    def user_email(self, obj):
+        return obj.user.email
+    user_email.short_description = 'User Email'
+    user_email.admin_order_field = 'user__email'
     
-    def file_size_mb(self, obj):
-        """Display file size in MB"""
+    def file_size_display(self, obj):
         if obj.file_size:
-            return f"{obj.file_size / (1024 * 1024):.2f} MB"
-        return "N/A"
-    file_size_mb.short_description = 'File Size'
+            if obj.file_size < 1024:
+                return f"{obj.file_size} B"
+            elif obj.file_size < 1024**2:
+                return f"{obj.file_size/1024:.1f} KB"
+            else:
+                return f"{obj.file_size/(1024**2):.1f} MB"
+        return "Unknown"
+    file_size_display.short_description = 'File Size'
     
-    def has_extracted_text(self, obj):
-        """Show if text was extracted successfully"""
-        if obj.extracted_text:
-            if "extraction failed" in obj.extracted_text.lower():
-                return format_html('<span style="color: red;">❌ Failed</span>')
-            return format_html('<span style="color: green;">✅ Success</span>')
-        return format_html('<span style="color: orange;">⚠️ No Text</span>')
-    has_extracted_text.short_description = 'Text Extraction'
+    def skills_count(self, obj):
+        return len(obj.skills) if obj.skills else 0
+    skills_count.short_description = 'Skills Count'
     
-    def extracted_text_preview(self, obj):
-        """Show a preview of extracted text"""
-        if obj.extracted_text:
-            preview = obj.extracted_text[:500]
-            if len(obj.extracted_text) > 500:
-                preview += "..."
-            return format_html('<pre style="white-space: pre-wrap;">{}</pre>', preview)
-        return "No extracted text available"
-    extracted_text_preview.short_description = 'Extracted Text Preview'
-
-# ============================================
-# requirements.txt additions
-# ============================================
-
-"""
-Add these packages to your requirements.txt:
-
-PyPDF2==3.0.1
-python-docx==0.8.11
-djangorestframework==3.14.0
-Pillow==10.0.0  # For ImageField support if needed
-
-# Or install via pip:
-pip install PyPDF2==3.0.1 python-docx==0.8.11 djangorestframework==3.14.0 Pillow==10.0.0
-"""
-
-# ============================================
-# Migration commands
-# ============================================
-
-"""
-After setting up the app, run these Django commands:
-
-1. Create and apply migrations:
-   python manage.py makemigrations resumes
-   python manage.py migrate
-
-2. Create superuser (if not already done):
-   python manage.py createsuperuser
-
-3. Collect static files (for production):
-   python manage.py collectstatic
-"""
+    def file_url_display(self, obj):
+        if obj.file:
+            return format_html(
+                '<a href="{}" target="_blank">Download File</a>',
+                obj.file.url
+            )
+        return "No file"
+    file_url_display.short_description = 'File URL'
+    
+    actions = ['reparse_resumes', 'mark_as_unparsed']
+    
+    def reparse_resumes(self, request, queryset):
+        """Admin action to reparse selected resumes"""
+        from .utils import parse_resume_content, ResumeParsingError
+        from django.utils import timezone
+        
+        success_count = 0
+        error_count = 0
+        
+        for resume in queryset:
+            if resume.extracted_text:
+                try:
+                    parsed_data = parse_resume_content(resume.extracted_text)
+                    resume.full_name = parsed_data.get('fullName')
+                    resume.summary = parsed_data.get('summary')
+                    resume.contact_info = parsed_data.get('contactInfo', {})
+                    resume.skills = parsed_data.get('skills', [])
+                    resume.work_experience = parsed_data.get('workExperience', [])
+                    resume.education = parsed_data.get('education', [])
+                    resume.certifications = parsed_data.get('certifications', [])
+                    resume.projects = parsed_data.get('projects', [])
+                    resume.is_parsed = True
+                    resume.parsing_error = None
+                    resume.parsed_at = timezone.now()
+                    resume.save()
+                    success_count += 1
+                except ResumeParsingError as e:
+                    resume.parsing_error = str(e)
+                    resume.is_parsed = False
+                    resume.save()
+                    error_count += 1
+            else:
+                error_count += 1
+        
+        self.message_user(
+            request,
+            f"Successfully reparsed {success_count} resumes. {error_count} failed."
+        )
+    reparse_resumes.short_description = "Reparse selected resumes"
+    
+    def mark_as_unparsed(self, request, queryset):
+        """Mark selected resumes as unparsed"""
+        updated = queryset.update(is_parsed=False, parsing_error="Manually marked as unparsed")
+        self.message_user(request, f"Marked {updated} resumes as unparsed.")
+    mark_as_unparsed.short_description = "Mark as unparsed"

@@ -28,7 +28,7 @@ export const useAuthStore = defineStore('auth', () => {
       
       return response.data
     } catch (err) {
-      error.value = err.response?.data?.message || 'Login failed'
+      error.value = err.response?.data?.message || err.response?.data?.detail || 'Login failed'
       throw err
     } finally {
       isLoading.value = false
@@ -41,9 +41,10 @@ export const useAuthStore = defineStore('auth', () => {
     
     try {
       const response = await authAPI.register(userData)
+      // Registration successful - user needs to verify email before logging in
       return response.data
     } catch (err) {
-      error.value = err.response?.data?.message || 'Registration failed'
+      error.value = err.response?.data?.message || err.response?.data?.detail || 'Registration failed'
       throw err
     } finally {
       isLoading.value = false
@@ -64,6 +65,22 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const getProfile = async () => {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const response = await authAPI.getProfile()
+      user.value = response.data
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || err.response?.data?.detail || 'Failed to load profile'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   const updateProfile = async (profileData) => {
     isLoading.value = true
     error.value = null
@@ -73,10 +90,84 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = { ...user.value, ...response.data }
       return response.data
     } catch (err) {
-      error.value = err.response?.data?.message || 'Profile update failed'
+      error.value = err.response?.data?.message || err.response?.data?.detail || 'Profile update failed'
       throw err
     } finally {
       isLoading.value = false
+    }
+  }
+
+  const partialUpdateProfile = async (profileData) => {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const response = await authAPI.partialUpdateProfile(profileData)
+      user.value = { ...user.value, ...response.data }
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || err.response?.data?.detail || 'Profile update failed'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const changePassword = async (passwordData) => {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const response = await authAPI.changePassword(passwordData)
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || err.response?.data?.detail || 'Password change failed'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const verifyEmail = async (uidb64, token) => {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const response = await authAPI.verifyEmail(uidb64, token)
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || err.response?.data?.detail || 'Email verification failed'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const resendVerification = async () => {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const response = await authAPI.resendVerification()
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.message || err.response?.data?.detail || 'Failed to resend verification'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Initialize user from token if available
+  const initializeAuth = async () => {
+    if (token.value && !user.value) {
+      try {
+        await getProfile()
+      } catch (error) {
+        console.error('Failed to initialize auth:', error)
+        // Clear invalid token
+        logout()
+      }
     }
   }
 
@@ -89,6 +180,12 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     logout,
-    updateProfile
+    getProfile,
+    updateProfile,
+    partialUpdateProfile,
+    changePassword,
+    verifyEmail,
+    resendVerification,
+    initializeAuth
   }
 })

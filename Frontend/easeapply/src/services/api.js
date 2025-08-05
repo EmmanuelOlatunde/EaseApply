@@ -43,7 +43,9 @@ export const authAPI = {
   login: (credentials) => api.post('/users/login/', credentials),
   logout: () => api.post('/users/logout/'),
   changePassword: (passwordData) => api.put('/users/change-password/', passwordData),
+  getProfile: () => api.get('/users/profile/'),
   updateProfile: (profileData) => api.put('/users/profile/', profileData),
+  partialUpdateProfile: (profileData) => api.patch('/users/profile/', profileData),
   resendVerification: (email) => api.post('/users/resend-verification/', { email }),
   resetPasswordConfirm: (resetData) => api.post('/users/reset-password-confirm/', resetData),
   verifyEmail: (uidb64, token) => api.get(`/users/email-verify/${uidb64}/${token}/`)
@@ -51,10 +53,11 @@ export const authAPI = {
 
 // Analysis API calls
 export const analysisAPI = {
-  generateCoverLetter: (formData) => {
-    return api.post('/analysis/generate-cover-letter/', formData, {
+  generateCoverLetter: (data) => {
+    return api.post('/analysis/generate-cover-letter/', data, {
+      timeout: 60000, // 60 seconds for AI generation
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': 'application/json'
       }
     })
   }
@@ -62,12 +65,27 @@ export const analysisAPI = {
 
 // Resume API calls
 export const resumeAPI = {
-  create: (resumeData) => api.post('/resumes/', resumeData)
+  list: (page = 1) => api.get(`/resumes/?page=${page}`),
+  upload: (formData) => {
+    return api.post('/resumes/', formData, {
+      headers: { 
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+  get: (resumeId) => api.get(`/resumes/${resumeId}/`),
+  reparse: (resumeId) => api.put(`/resumes/${resumeId}/reparse/`),
+  analytics: (page = 1) => api.get(`/resumes/analytics/?page=${page}`)
 }
 
 // Jobs API calls
 export const jobAPI = {
-  create: (jobData) => api.post('/jobs/', jobData)
+  list: (page = 1) => api.get(`/jobs/my-jobs/?page=${page}`),
+  create: (jobData) => api.post('/jobs/', jobData),
+  get: (jobId) => api.get(`/jobs/${jobId}/`),
+  update: (jobId, jobData) => api.put(`/jobs/${jobId}/`, jobData),
+  delete: (jobId) => api.delete(`/jobs/${jobId}/`),
+  reprocess: (jobId, jobData) => api.put(`/jobs/reprocess/${jobId}/`, jobData)
 }
 
 export default api

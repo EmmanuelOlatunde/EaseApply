@@ -51,3 +51,11 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
         # Only allow edit if the requesting user is the owner
         return hasattr(obj, 'owner') and obj.owner == request.user
+
+class IsOwner(permissions.BasePermission):
+    """
+    Custom permission to only allow owners of an object to access it.
+    """
+    
+    def has_object_permission(self, request, view, obj):
+        return obj.user == request.user

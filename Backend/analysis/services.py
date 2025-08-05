@@ -40,16 +40,17 @@ class OpenRouterService:
         prompt_template = CoverLetterPrompts.get_prompt(template_type)
 
         formatted_prompt = prompt_template.format(
-            title=title.strip(),
-            company=company.strip(),
-            location=location.strip(),
-            job_type=job_type.strip(),
-            salary_range=salary_range.strip(),
-            requirements=requirements.strip(),
-            skills_required=skills_required.strip(),
-            experience_level=experience_level.strip(),
-            resume_content=resume_content.strip()
+            title=(title or "").strip(),
+            company=(company or "").strip(),
+            location=(location or "").strip(),
+            job_type=(job_type or "").strip(),
+            salary_range=(salary_range or "").strip(),
+            requirements=(requirements or "").strip(),
+            skills_required=(skills_required or "").strip(),
+            experience_level=(experience_level or "").strip(),
+            resume_content=(resume_content or "").strip()
         )
+
 
         fallback_models = [
             ("moonshotai/kimi-k2:free", self.api_keys["kimi"]),

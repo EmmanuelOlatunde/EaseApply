@@ -16,7 +16,7 @@ class CoverLetterPrompts:
         Job Description:
             Job title = {title} ,
             company name ={company},
-            location={company},
+            location={location},
             job_type={job_type},
             salary_range={salary_range},
             requirements={requirements},
@@ -47,7 +47,14 @@ class CoverLetterPrompts:
             You are a creative cover letter expert who helps candidates in marketing, design, and innovation roles stand out. Write a memorable, story-driven, and personality-rich cover letter based on the job description and resume below.
 
             Job Description:
-            {job_description}
+                Job title = {title} ,
+                company name ={company},
+                location={location},
+                job_type={job_type},
+                salary_range={salary_range},
+                requirements={requirements},
+                skills_required={skills_required},
+                experience_level={experience_level},
 
             Candidate Resume:
             {resume_content}

@@ -5,15 +5,15 @@ from resumes.models import Resume
 class CoverLetterGenerateSerializer(serializers.Serializer):
     """Serializer for cover letter generation request"""
     
-    job_id = serializers.IntegerField(
-        min_value=1, 
+    job_id = serializers.UUIDField(
+     
         required=False, 
         allow_null=True,
         help_text="ID of the job description (optional, will use latest if not provided)"
     )
-    resume_id = serializers.IntegerField(
-        min_value=1, 
-        required=False, 
+    resume_id = serializers.UUIDField(
+         
+        required=False,  
         allow_null=True,
         help_text="ID of the resume (optional, will use latest if not provided)"
     )
@@ -44,6 +44,10 @@ class CoverLetterGenerateSerializer(serializers.Serializer):
     
     def validate(self, attrs):
         """Additional cross-field validation (only if both IDs provided)"""
+
+        if 'request' not in self.context:
+            raise serializers.ValidationError("Request context is required for validation.")
+        
         user = self.context['request'].user
         
         job_id = attrs.get('job_id')
@@ -70,10 +74,8 @@ class CoverLetterGenerateSerializer(serializers.Serializer):
 
         
 class CoverLetterResponseSerializer(serializers.Serializer):
-    """Serializer for cover letter generation response"""
-    
     success = serializers.BooleanField()
-    cover_letter = serializers.CharField(allow_blank=True)
-    analysis_id = serializers.IntegerField(required=False)
-    metadata = serializers.DictField(required=False)
-    message = serializers.CharField(required=False)
+    cover_letter = serializers.CharField(allow_blank=True, required=False)
+    analysis_id = serializers.IntegerField(required=False, allow_null=True)
+    metadata = serializers.DictField(required=False, allow_null=True)
+    message = serializers.CharField(required=False, allow_null=True)

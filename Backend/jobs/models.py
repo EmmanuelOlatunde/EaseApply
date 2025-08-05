@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 import os
-
+import uuid
 
 def job_document_upload_path(instance, filename):
     """Generate upload path for job description documents"""
@@ -16,7 +16,7 @@ class JobDescription(models.Model):
         related_name='job_descriptions'
         
     )
-    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     # Original content
     raw_content = models.TextField(help_text="Original job description content")
     document = models.FileField(

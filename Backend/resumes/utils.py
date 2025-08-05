@@ -3,6 +3,7 @@ import re
 from typing import Dict, List, Optional, Any
 from django.core.files.uploadedfile import UploadedFile
 
+
 try:
     import PyPDF2
 except ImportError:
@@ -237,15 +238,14 @@ def extract_contact_info(text: str) -> Dict[str, Optional[str]]:
 
 def extract_summary(text: str) -> Optional[str]:
     """
-    Extract summary from resume text
+    Extract summary from resume text - FIXED VERSION
     """
     summary_keywords = [
         'summary', 'professional summary', 'executive summary',
-        'profile', 'professional profile', 'career summary', 'professional experience',
+        'profile', 'professional profile', 'career summary',
         'objective', 'career objective', 'professional objective'
     ]
     
-    # Define keywords that signal the end of the summary section
     stop_keywords = [
         'experience', 'professional experience', 'education', 'skills', 
         'employment', 'work history', 'projects', 'certifications', 'technical skills'
@@ -254,35 +254,31 @@ def extract_summary(text: str) -> Optional[str]:
     lines = text.split('\n')
     summary_started = False
     summary_lines = []
-
+    
     for i, line in enumerate(lines):
-        # Clean the line for matching: lowercase, strip whitespace, and remove colons
-        line_for_match = line.strip().lower().replace(':', '')
+        line_clean = line.strip()
+        line_for_match = line_clean.lower().replace(':', '')
         
-        # Skip empty lines, but handle paragraph breaks
-        if not line.strip():
-            if summary_lines and lines[i-1].strip() == '':
-                break
+        if not line_clean:
+            if summary_started and summary_lines:
+                # Empty line might indicate end of summary
+                next_line = lines[i+1].strip().lower() if i+1 < len(lines) else ""
+                if any(keyword in next_line for keyword in stop_keywords):
+                    break
             continue
-
+        
         if summary_started:
-            # FIX: Check if the entire line IS a stop keyword, not just if it CONTAINS one.
+            # Check if this line is a section header
             if line_for_match in stop_keywords:
                 break
-            
-            # Collect non-empty lines
-            summary_lines.append(line.strip())
-        
-        # Check for summary section start (case-insensitive)
-        elif not summary_started and any(keyword in line_for_match for keyword in summary_keywords):
+            summary_lines.append(line_clean)
+        elif any(keyword in line_for_match for keyword in summary_keywords):
             summary_started = True
-            
-            # This logic still has a limitation: it ignores summary text
-            # that is on the same line as the header (e.g., "Summary: Highly skilled...").
-            # The `continue` skips processing the rest of the line.
-            # However, this change is sufficient to pass your current tests.
-            continue
-            
+            # Check if summary text is on the same line as header
+            colon_split = line_clean.split(':', 1)
+            if len(colon_split) > 1 and colon_split[1].strip():
+                summary_lines.append(colon_split[1].strip())
+    
     return ' '.join(summary_lines) if summary_lines else None
 
 def extract_skills(text: str) -> List[str]:

@@ -53,15 +53,28 @@
         </p>
       </div>
 
+      <!-- Authentication Notice -->
+      <div v-if="!authStore.isAuthenticated" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-yellow-800">
+            Please <button @click="showAuthModal = true" class="text-yellow-700 underline font-medium">sign in</button> to generate cover letters.
+          </p>
+        </div>
+      </div>
+
       <!-- Main Form -->
       <div class="bg-white rounded-lg shadow-sm border border-ash-200 p-8 mb-8">
         <form @submit.prevent="generateCoverLetter" class="space-y-8">
           <!-- Resume Upload -->
           <FileUpload
             label="Upload Your Resume"
-            accept=".pdf"
-            acceptText="PDF files only (max 10MB)"
+            accept=".pdf, .docx"
+            acceptText="PDF or DOCX files only (max 10MB)"
             @file-selected="handleResumeUpload"
+            :disabled="!authStore.isAuthenticated"
           />
 
           <!-- Job Description -->
@@ -73,7 +86,8 @@
               <textarea
                 v-model="jobDescription"
                 rows="8"
-                class="w-full px-3 py-3 border border-ash-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                :disabled="!authStore.isAuthenticated"
+                class="w-full px-3 py-3 border border-ash-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:bg-gray-50 disabled:text-gray-500"
                 placeholder="Paste the complete job description here. Include requirements, responsibilities, and company information for the best results..."
                 required
               ></textarea>
@@ -90,27 +104,12 @@
                 Tone (Optional)
               </label>
               <select
-                v-model="tone"
-                class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                v-model="template_type"
+                :disabled="!authStore.isAuthenticated"
+                class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
               >
                 <option value="professional">Professional</option>
-                <option value="enthusiastic">Enthusiastic</option>
-                <option value="confident">Confident</option>
-                <option value="formal">Formal</option>
-              </select>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-ash-700 mb-2">
-                Length
-              </label>
-              <select
-                v-model="length"
-                class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="short">Short (200-300 words)</option>
-                <option value="medium">Medium (300-400 words)</option>
-                <option value="long">Long (400-500 words)</option>
+                <option value="creative">Creative</option>
               </select>
             </div>
           </div>
@@ -119,12 +118,12 @@
           <div class="flex justify-center">
             <button
               type="submit"
-              :disabled="!resumeFile || !jobDescription.trim() || isGenerating"
+              :disabled="!authStore.isAuthenticated || !resumeFile || !jobDescription.trim() || isGenerating"
               class="px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
               <span v-if="isGenerating" class="flex items-center">
                 <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Generating Cover Letter...
+                {{ generatingMessage }}
               </span>
               <span v-else class="flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,7 +139,7 @@
       <!-- Loading State -->
       <div v-if="isGenerating" class="bg-white rounded-lg shadow-sm border border-ash-200">
         <LoadingSpinner 
-          message="Analyzing your resume and generating personalized cover letter..."
+          :message="generatingMessage"
           :showProgress="true"
           :progress="progress"
         />
@@ -208,7 +207,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import { analysisAPI } from '../services/api'
+import { analysisAPI, resumeAPI, jobAPI } from '../services/api'
 import FileUpload from '../components/FileUpload.vue'
 import CoverLetterOutput from '../components/CoverLetterOutput.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
@@ -219,8 +218,7 @@ const authStore = useAuthStore()
 // Form data
 const resumeFile = ref(null)
 const jobDescription = ref('')
-const tone = ref('professional')
-const length = ref('medium')
+const template_type = ref('professional')
 
 // State
 const isGenerating = ref(false)
@@ -229,6 +227,7 @@ const generatedCoverLetter = ref('')
 const generatedAt = ref(null)
 const error = ref(null)
 const showAuthModal = ref(false)
+const generatingMessage = ref('Analyzing your resume and generating personalized cover letter...')
 
 // Methods
 const handleResumeUpload = (file) => {
@@ -236,6 +235,11 @@ const handleResumeUpload = (file) => {
 }
 
 const generateCoverLetter = async () => {
+  if (!authStore.isAuthenticated) {
+    showAuthModal.value = true
+    return
+  }
+
   if (!resumeFile.value || !jobDescription.value.trim()) {
     error.value = 'Please upload a resume and provide a job description'
     return
@@ -244,6 +248,7 @@ const generateCoverLetter = async () => {
   isGenerating.value = true
   error.value = null
   progress.value = 0
+  generatingMessage.value = 'Uploading and processing resume...'
 
   // Simulate progress
   const progressInterval = setInterval(() => {
@@ -253,29 +258,80 @@ const generateCoverLetter = async () => {
   }, 500)
 
   try {
-    const formData = new FormData()
-    formData.append('resume', resumeFile.value)
-    formData.append('job_description', jobDescription.value)
-    formData.append('tone', tone.value)
-    formData.append('length', length.value)
+    // Step 1: Upload resume first
+    generatingMessage.value = 'Uploading resume...'
+    const resumeFormData = new FormData()
+    resumeFormData.append('file', resumeFile.value)
+    
+    const resumeResponse = await resumeAPI.upload(resumeFormData)
+    const resumeId = resumeResponse.data.id
 
-    const response = await analysisAPI.generateCoverLetter(formData)
+    progress.value = 30
+    generatingMessage.value = 'Creating job description...'
+
+    // Step 2: Create job description from the pasted text
+    const jobData = createJobDescriptionData(jobDescription.value)
+    const jobResponse = await jobAPI.create(jobData)
+    const jobId = jobResponse.data.id
+
+    progress.value = 60
+    generatingMessage.value = 'Generating cover letter with AI...'
+
+    // Step 3: Generate cover letter using the IDs
+    const coverLetterData = {
+      job_id: jobId,
+      resume_id: resumeId,
+      template_type: template_type.value
+    }
+
+    const response = await analysisAPI.generateCoverLetter(coverLetterData)
+    
+    // Debug: Log the response to see what we're getting
+    console.log('Cover letter API response:', response.data)
     
     clearInterval(progressInterval)
     progress.value = 100
 
-    setTimeout(() => {
-      generatedCoverLetter.value = response.data.cover_letter
-      generatedAt.value = new Date()
+    // Check if the response indicates success
+    if (response.data.success && response.data.cover_letter) {
+      setTimeout(() => {
+        generatedCoverLetter.value = response.data.cover_letter
+        generatedAt.value = new Date()
+        isGenerating.value = false
+      }, 500)
+    } else {
+      // Handle case where API returns 201 but success is false
       isGenerating.value = false
-    }, 500)
+      error.value = response.data.message || 'Failed to generate cover letter. Please try again.'
+    }
 
   } catch (err) {
     clearInterval(progressInterval)
     isGenerating.value = false
-    error.value = err.response?.data?.message || 'Failed to generate cover letter. Please try again.'
+    
+    // More specific error handling
+    if (err.response?.status === 401) {
+      error.value = 'Please sign in to generate cover letters'
+      showAuthModal.value = true
+    } else if (err.response?.status === 404) {
+      error.value = err.response?.data?.message || 'Resource not found'
+    } else {
+      error.value = err.response?.data?.message || 'Failed to generate cover letter. Please try again.'
+    }
   }
 }
+
+// Helper function to create job description data for backend
+const createJobDescriptionData = (text) => {
+  // Backend expects JobDescriptionUpload format
+  return {
+    raw_content: text,
+    is_active: true
+    // document field is optional and readonly according to the schema
+  }
+}
+
+
 
 const handleAuthSuccess = () => {
   showAuthModal.value = false
