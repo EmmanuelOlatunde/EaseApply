@@ -52,7 +52,7 @@ def send_password_reset_email(user):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         
         subject = 'Password Reset'
-        message = render_to_string('email/password_reset_email.html', {
+        message = render_to_string('email/password_reset.html', {
             'user': user,
             'uid': uid,
             'token': token,
@@ -68,4 +68,4 @@ def send_password_reset_email(user):
         )
         logger.info(f"Password reset email sent to {user.email}")
     except Exception as e:
-        logger.error(f"Failed to send password reset email to {user.email}: {str(e)}")
+        logger.error(f"Failed to send password reset email: {str(e)}", exc_info=True)

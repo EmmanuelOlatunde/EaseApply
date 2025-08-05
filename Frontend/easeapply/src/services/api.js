@@ -47,6 +47,7 @@ export const authAPI = {
   updateProfile: (profileData) => api.put('/users/profile/', profileData),
   partialUpdateProfile: (profileData) => api.patch('/users/profile/', profileData),
   resendVerification: (email) => api.post('/users/resend-verification/', { email }),
+  resetPassword: (email) => api.post('/users/password-reset-request/', { email }),
   resetPasswordConfirm: (resetData) => api.post('/users/reset-password-confirm/', resetData),
   verifyEmail: (uidb64, token) => api.get(`/users/email-verify/${uidb64}/${token}/`)
 }

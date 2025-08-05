@@ -4,7 +4,7 @@
       <div class="p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-semibold text-ash-800">
-            {{ isLogin ? 'Sign In' : 'Create Account' }}
+            {{ isForgotPassword ? 'Reset Password' : (isLogin ? 'Sign In' : 'Create Account') }}
           </h2>
           <button
             @click="$emit('close')"
@@ -41,8 +41,62 @@
             </div>
           </div>
         </div>
+
+        <!-- Success message for password reset -->
+        <div v-if="resetPasswordSuccess" class="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-green-800">Reset link sent!</h3>
+              <div class="mt-2 text-sm text-green-700">
+                <p>If an account with that email exists, we've sent a password reset link to your email address.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Forgot Password Form -->
+        <form v-if="isForgotPassword && !resetPasswordSuccess" @submit.prevent="handleForgotPassword" class="space-y-5">
+          <div class="text-center mb-4">
+            <p class="text-sm text-gray-600">
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+          </div>
+
+          <!-- Email field -->
+          <div class="mb-5">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+            <input
+              v-model="form.email"
+              type="email"
+              required
+              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              placeholder="Enter your email address"
+            />
+          </div>
+          
+          <div v-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="text-red-600 text-sm">{{ error }}</div>
+          </div>
+          
+          <button
+            type="submit"
+            :disabled="isLoading"
+            class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+          >
+            <span v-if="isLoading" class="flex items-center justify-center">
+              <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              Sending Reset Link...
+            </span>
+            <span v-else>Send Reset Link</span>
+          </button>
+        </form>
         
-        <form v-if="!registrationSuccess" @submit.prevent="handleSubmit" class="space-y-5">
+        <form v-if="!registrationSuccess && !resetPasswordSuccess && !isForgotPassword" @submit.prevent="handleSubmit" class="space-y-5">
           <!-- Registration fields -->
           <div v-if="!isLogin">
             <!-- Name fields -->
@@ -132,6 +186,17 @@
               />
             </div>
           </div>
+
+          <!-- Forgot Password Link (login only) -->
+          <div v-if="isLogin" class="text-right">
+            <button
+              type="button"
+              @click="goToForgotPassword"
+              class="text-sm text-blue-600 hover:text-blue-500 font-medium"
+            >
+              Forgot your password?
+            </button>
+          </div>
           
           <div v-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
             <div class="text-red-600 text-sm">
@@ -157,13 +222,23 @@
           </button>
         </form>
         
-        <div v-if="!registrationSuccess" class="mt-4 text-center">
-          <button
-            @click="toggleMode"
-            class="text-blue-600 hover:text-blue-500 text-sm font-medium"
-          >
-            {{ isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in" }}
-          </button>
+        <div v-if="!registrationSuccess && !resetPasswordSuccess" class="mt-4 text-center">
+          <div v-if="isForgotPassword">
+            <button
+              @click="goToLogin"
+              class="text-blue-600 hover:text-blue-500 text-sm font-medium"
+            >
+              ← Back to Sign In
+            </button>
+          </div>
+          <div v-else>
+            <button
+              @click="toggleMode"
+              class="text-blue-600 hover:text-blue-500 text-sm font-medium"
+            >
+              {{ isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in" }}
+            </button>
+          </div>
         </div>
         
         <div v-if="registrationSuccess" class="mt-4 text-center">
@@ -172,6 +247,15 @@
             class="text-blue-600 hover:text-blue-500 text-sm font-medium"
           >
             Go to Sign In
+          </button>
+        </div>
+
+        <div v-if="resetPasswordSuccess" class="mt-4 text-center">
+          <button
+            @click="goToLogin"
+            class="text-blue-600 hover:text-blue-500 text-sm font-medium"
+          >
+            Back to Sign In
           </button>
         </div>
       </div>
@@ -192,10 +276,12 @@ const emit = defineEmits(['close', 'success'])
 
 const authStore = useAuthStore()
 const isLogin = ref(true)
+const isForgotPassword = ref(false)
 const isLoading = ref(false)
 const isResending = ref(false)
 const error = ref('')
 const registrationSuccess = ref(false)
+const resetPasswordSuccess = ref(false)
 
 const form = ref({
   first_name: '',
@@ -222,8 +308,10 @@ const formatFieldName = (field) => {
 
 const toggleMode = () => {
   isLogin.value = !isLogin.value
+  isForgotPassword.value = false
   error.value = ''
   registrationSuccess.value = false
+  resetPasswordSuccess.value = false
   form.value = {
     first_name: '',
     last_name: '',
@@ -237,6 +325,8 @@ const toggleMode = () => {
 
 const goToLogin = () => {
   registrationSuccess.value = false
+  resetPasswordSuccess.value = false
+  isForgotPassword.value = false
   isLogin.value = true
   error.value = ''
   form.value = {
@@ -244,6 +334,24 @@ const goToLogin = () => {
     last_name: '',
     username: '',
     email: '',
+    phone: '',
+    password: '',
+    password_confirm: ''
+  }
+}
+
+const goToForgotPassword = () => {
+  isForgotPassword.value = true
+  isLogin.value = false
+  error.value = ''
+  registrationSuccess.value = false
+  resetPasswordSuccess.value = false
+  // Keep email if already entered
+  form.value = {
+    first_name: '',
+    last_name: '',
+    username: '',
+    email: form.value.email || '',
     phone: '',
     password: '',
     password_confirm: ''
@@ -262,6 +370,21 @@ const resendVerification = async () => {
     // You might want to show an error message here
   } finally {
     isResending.value = false
+  }
+}
+
+const handleForgotPassword = async () => {
+  error.value = ''
+  isLoading.value = true
+  
+  try {
+    await authAPI.resetPassword(form.value.email)
+    resetPasswordSuccess.value = true
+  } catch (err) {
+    console.error('Password reset error:', err)
+    error.value = err.response?.data?.message || err.response?.data?.detail || 'Failed to send reset email'
+  } finally {
+    isLoading.value = false
   }
 }
 

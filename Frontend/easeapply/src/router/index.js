@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/auth'
 import Home from '../views/Home.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Profile from '../views/Profile.vue'
+import PasswordReset from '../views/PasswordReset.vue'
 
 const routes = [
   {
@@ -23,7 +24,13 @@ const routes = [
     name: 'Profile',
     component: Profile,
     meta: { requiresAuth: true }
-  }
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: PasswordReset,
+    meta: { requiresAuth: false }
+  },
 ]
 
 const router = createRouter({

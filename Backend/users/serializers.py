@@ -114,6 +114,10 @@ class ChangePasswordSerializer(serializers.Serializer):
         return attrs
 
 
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
 class ResetPasswordConfirmSerializer(serializers.Serializer):
     uid = serializers.CharField()
     token = serializers.CharField()
@@ -122,5 +126,9 @@ class ResetPasswordConfirmSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if attrs['new_password'] != attrs['new_password_confirm']:
-            raise serializers.ValidationError("Passwords don't match")
+            raise serializers.ValidationError({
+                "new_password_confirm": "Passwords do not match"
+            })
+
         return attrs
+

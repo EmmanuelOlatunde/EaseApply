@@ -9,6 +9,7 @@ from .serializers import (
     UserLoginSerializer, 
     UserProfileSerializer,
     ChangePasswordSerializer,
+    PasswordResetRequestSerializer,
     ResetPasswordConfirmSerializer
 )
 from common.permissions import IsOwnerOrReadOnly
@@ -16,11 +17,13 @@ from common.utils import get_client_ip, send_verification_email
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.throttling import AnonRateThrottle
 
 from rest_framework.permissions import AllowAny
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.contrib.auth.tokens import default_token_generator
+from common.utils import send_password_reset_email
 
 
 class RegisterView(generics.CreateAPIView):
@@ -37,7 +40,6 @@ class RegisterView(generics.CreateAPIView):
             # Log the failure but don't block registration
             print(f"Email sending failed: {e}")
         return user
-
 
 class LoginView(APIView):
     """User login endpoint with JWT"""
@@ -85,7 +87,6 @@ class LoginView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class LogoutView(APIView):
     """User logout endpoint"""
     permission_classes = [permissions.IsAuthenticated]
@@ -97,9 +98,6 @@ class LogoutView(APIView):
             pass
         return Response({'message': 'Successfully logged out'})
     
-
-
-
 class ProfileView(generics.RetrieveUpdateAPIView):
     """User profile retrieve and update endpoint"""
     serializer_class = UserProfileSerializer
@@ -107,7 +105,6 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     
     def get_object(self):
         return self.request.user
-
 
 class ChangePasswordView(APIView):
     """Change password endpoint"""
@@ -146,7 +143,6 @@ class ChangePasswordView(APIView):
             return Response({'message': 'Password changed successfully'})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class ResendVerificationEmailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -181,8 +177,55 @@ class VerifyEmailView(APIView):
         else:
             return Response({"error": "Invalid or expired token"}, status=400)
 
+
+class PasswordResetRequestView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+
+    @swagger_auto_schema(
+        operation_description="Rest your password",
+        request_body=PasswordResetRequestSerializer,
+        responses={
+            200: openapi.Response(
+                description="Reset Email successful",
+                examples={
+                    "application/json": {
+            
+                        "user": {                            
+                            "email": "test@example.com",
+                        }
+                    }
+                }
+            ),
+            400: "Invalid credentials"
+        }
+    )
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        email = serializer.validated_data['email']
+        try:
+            user = User.objects.get(email=email)
+            send_password_reset_email(user)
+        except User.DoesNotExist:
+            # Silently succeed to avoid leaking user existence
+            pass
+
+        try:
+            send_password_reset_email(user)
+            return Response({"message": "If an account with that email exists, a password reset link has been sent."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": "Failed to send verification email", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class ResetPasswordConfirmView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     def post(self, request):
         serializer = ResetPasswordConfirmSerializer(data=request.data)
