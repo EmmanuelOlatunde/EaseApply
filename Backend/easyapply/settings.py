@@ -89,8 +89,12 @@ CORS_ALLOWED_ORIGINS = [
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'easeapply',
+        'USER': 'easeadmin',
+        'PASSWORD': '@Mohbohlahji55!',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
@@ -163,9 +167,15 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '10/hour',
+        'user': '5/minute',   # or whatever limit you want
+        'anon': '10/minute',
     },
+    
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
@@ -314,20 +324,48 @@ FRONTEND_URL = "http://localhost:5173"
 
 # # Cache Configuration (optional but recommended)
 # CACHES = {
-#     'default': {
+#    'default': {
 #         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
 #         'LOCATION': 'redis://127.0.0.1:6379/1',
 #     }
 # }
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+#         "LOCATION": "unique-dev",
+#     }
+# }
+# Upstash Redis Configuration
+UPSTASH_REDIS_URL = config('UPSTASH_REDIS_URL')
+UPSTASH_REDIS_REST_URL = config('UPSTASH_REDIS_REST_URL')
+UPSTASH_REDIS_REST_TOKEN = config('UPSTASH_REDIS_REST_TOKEN')
+UPSTASH_REDIS_READONLY_TOKEN = config('UPSTASH_REDIS_READONLY_TOKEN', default='')
+
+# Cache configuration using Upstash Redis
 CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "unique-dev",
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': UPSTASH_REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {
+                'retry_on_timeout': True,
+                'socket_keepalive': True,
+                'socket_keepalive_options': {},
+                'health_check_interval': 30,
+            }
+        },
+        'KEY_PREFIX': 'myapp',  # Replace with your app prefix
+        'TIMEOUT': 300,  # Default timeout of 5 minutes
     }
 }
 
-# Session Configuration
-SESSION_COOKIE_AGE = 86400  # 1 day
+# Session configuration - Use Redis for sessions
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_SAVE_EVERY_REQUEST = False
+
 SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
@@ -351,66 +389,39 @@ SWAGGER_SETTINGS = {
 }
 
 
-
-
-
-# ================================
-# 11. Django Settings Configuration
-# ================================
-"""
-# In your settings.py, add:
-
-import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
-
-
-# Add to INSTALLED_APPS
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'users',
-    'jobs',
-    'resumes',
-    'analysis',  # Add this
-]
-
-# Logging configuration
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'analysis.log',
-            'formatter': 'verbose',
-        },
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-    },
-    'loggers': {
-        'analysis': {
-            'handlers': ['file', 'console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-    },
+# Redis Service Configuration
+REDIS_SERVICE_CONFIG = {
+    'DEFAULT_TIMEOUT': 300,  # 5 minutes
+    'USER_CACHE_TIMEOUT': 3600,  # 1 hour
+    'SESSION_TIMEOUT': 86400,  # 24 hours
+    'API_RATE_LIMIT_TIMEOUT': 3600,  # 1 hour
 }
-"""
+
+# Get the base URL
+base_url = config('CELERY_BROKER_URL')
+
+# Add SSL parameter if it's a rediss:// URL
+if base_url.startswith('rediss://'):
+    if '?' in base_url:
+        CELERY_BROKER_URL = base_url + '&ssl_cert_reqs=none'
+    else:
+        CELERY_BROKER_URL = base_url + '?ssl_cert_reqs=none'
+else:
+    CELERY_BROKER_URL = base_url
+
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+
+# CELERY_BROKER_URL = config('CELERY_BROKER_URL')
+# CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+
+# CELERY_BROKER_USE_SSL = {
+#     'ssl_cert_reqs': ssl.CERT_NONE
+# }
+# CELERY_RESULT_BACKEND_USE_SSL = CELERY_BROKER_USE_SSL
+
+# Optional reliability settings
+CELERY_TASK_ALWAYS_EAGER = False
+CELERY_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60

@@ -4,75 +4,61 @@ from resumes.models import Resume
 
 class CoverLetterGenerateSerializer(serializers.Serializer):
     """Serializer for cover letter generation request"""
-    
+
     job_id = serializers.UUIDField(
-     
-        required=False, 
+        required=False,
         allow_null=True,
         help_text="ID of the job description (optional, will use latest if not provided)"
     )
     resume_id = serializers.UUIDField(
-         
-        required=False,  
+        required=False,
         allow_null=True,
         help_text="ID of the resume (optional, will use latest if not provided)"
     )
-    
-    def validate_job_id(self, value):
-        """Validate that job exists and belongs to authenticated user (only if provided)"""
-        if value is None:
-            return value  # skip validation if not provided
-        
-        user = self.context['request'].user
-        if not JobDescription.objects.filter(id=value, user=user).exists():
-            raise serializers.ValidationError(
-                "Job description not found or you don't have permission to access it."
-            )
-        return value
-    
-    def validate_resume_id(self, value):
-        """Validate that resume exists and belongs to authenticated user (only if provided)"""
-        if value is None:
-            return value  # skip validation if not provided
-        
-        user = self.context['request'].user
-        if not Resume.objects.filter(id=value, user=user).exists():
-            raise serializers.ValidationError(
-                "Resume not found or you don't have permission to access it."
-            )
-        return value
-    
-    def validate(self, attrs):
-        """Additional cross-field validation (only if both IDs provided)"""
 
-        if 'request' not in self.context:
+    def _get_user_object(self, model, obj_id, user, not_found_msg):
+        """Helper: Fetch object with ownership check in one query."""
+        try:
+            return model.objects.only('id', 'user', 'extracted_text').get(id=obj_id, user=user)
+        except model.DoesNotExist:
+            raise serializers.ValidationError(not_found_msg)
+
+    def validate(self, attrs):
+        """Single-pass validation for job and resume."""
+        request = self.context.get('request')
+        if not request:
             raise serializers.ValidationError("Request context is required for validation.")
-        
-        user = self.context['request'].user
-        
+
+        user = request.user
         job_id = attrs.get('job_id')
         resume_id = attrs.get('resume_id')
 
-        # Only validate ownership if both IDs are present
-        if job_id and resume_id:
-            job = JobDescription.objects.get(id=job_id)
-            resume = Resume.objects.get(id=resume_id)
+        job = resume = None
 
-            if job.user != user or resume.user != user:
-                raise serializers.ValidationError(
-                    "Both job description and resume must belong to the authenticated user."
-                )
+        # Validate job if provided
+        if job_id:
+            job = self._get_user_object(
+                JobDescription, job_id, user,
+                "Job description not found or you don't have permission to access it."
+            )
 
-            # Check if resume has extracted text
-            if not resume.extracted_text or resume.extracted_text.strip() == '':
+        # Validate resume if provided
+        if resume_id:
+            resume = self._get_user_object(
+                Resume, resume_id, user,
+                "Resume not found or you don't have permission to access it."
+            )
+            if not resume.extracted_text or not resume.extracted_text.strip():
                 raise serializers.ValidationError(
                     "Resume must have extracted text content for analysis."
                 )
 
+        # If both provided, ensure they belong to same user (already enforced in _get_user_object)
+        attrs['job'] = job
+        attrs['resume'] = resume
         return attrs
 
 
-        
 class CoverLetterResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField()
     cover_letter = serializers.CharField(allow_blank=True, required=False)

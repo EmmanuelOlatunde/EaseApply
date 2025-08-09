@@ -23,7 +23,7 @@ class AnalysisResult(models.Model):
     result_text = models.TextField(help_text="Generated content from AI")
     
     # Metadata
-    model_used = models.CharField(max_length=50, default='gpt-4o')
+    model_used = models.CharField(max_length=100, default='gpt-4o')
     tokens_used = models.IntegerField(null=True, blank=True)
     processing_time = models.FloatField(null=True, blank=True, help_text="Time in seconds")
     

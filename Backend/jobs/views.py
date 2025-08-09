@@ -1,4 +1,3 @@
-
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -13,18 +12,13 @@ from .utils import extract_job_details
 
 class JobDescriptionCreateView(generics.CreateAPIView):
     """
-    List all job descriptions for authenticated user or create a new one
+    Upload a new job description
     """
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_serializer_class(self):
-        if self.request.method == 'POST':
-            return JobDescriptionUploadSerializer
-        return JobDescriptionListSerializer
-
-    def get_queryset(self):
-        return JobDescription.objects.filter(user=self.request.user)
+        return JobDescriptionUploadSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, context={'request': request})
@@ -33,35 +27,32 @@ class JobDescriptionCreateView(generics.CreateAPIView):
         try:
             job_description = serializer.save()
         except ValueError as e:
-            # Specific handling for document processing errors
             return Response(
-                {"message": f"Document processing error: {str(e)}"},
+                {"success": False, "error": f"Document processing error: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
-            # Generic database or unknown error
             return Response(
                 {
-                    "message": "Failed to save job description due to a server error.",
-                    "error": str(e)  # optional, remove in production
+                    "success": False,
+                    "error": "Failed to save job description due to a server error.",
+                    "details": str(e)
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
         response_serializer = JobDescriptionSerializer(job_description)
-        headers = self.get_success_headers(serializer.data)
-
         return Response(
             {
-                'message': 'Job description uploaded and processed successfully',
-                'job_description': response_serializer.data,
-                'extraction_status': {
-                    'processed': job_description.is_processed,
-                    'notes': job_description.processing_notes
+                "success": True,
+                "message": "Job description uploaded and processed successfully",
+                "job_description": response_serializer.data,
+                "extraction_status": {
+                    "processed": job_description.is_processed,
+                    "notes": job_description.processing_notes
                 }
             },
-            status=status.HTTP_201_CREATED,
-            headers=headers
+            status=status.HTTP_201_CREATED
         )
 
 
@@ -88,7 +79,7 @@ class PasteJobDescriptionView(generics.CreateAPIView):
 
         if not raw_content:
             return Response(
-                {'message': 'Job description content is required'},
+                {"success": False, 'error': 'Job description content is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -99,11 +90,12 @@ class PasteJobDescriptionView(generics.CreateAPIView):
 
         return Response(
             {
-                'message': 'Job description pasted and processed successfully',
-                'job_description': response_serializer.data,
-                'extraction_status': {
-                    'processed': job_description.is_processed,
-                    'notes': job_description.processing_notes
+                "success": True,
+                "message": "Job description pasted and processed successfully",
+                "job_description": response_serializer.data,
+                "extraction_status": {
+                    "processed": job_description.is_processed,
+                    "notes": job_description.processing_notes
                 }
             },
             status=status.HTTP_201_CREATED
@@ -124,6 +116,7 @@ class UserJobListView(generics.ListAPIView):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response({
+            "success": True,
             'count': queryset.count(),
             'processed_count': queryset.filter(is_processed=True).count(),
             'job_descriptions': serializer.data
@@ -146,7 +139,7 @@ class JobReprocessView(generics.UpdateAPIView):
 
         if not job.raw_content:
             return Response(
-                {'message': 'No raw content available for reprocessing'},
+                {"success": False, 'error': 'No raw content available for reprocessing'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -164,6 +157,7 @@ class JobReprocessView(generics.UpdateAPIView):
             serializer = self.get_serializer(job)
             return Response(
                 {
+                    "success": True,
                     'message': 'Job description reprocessed successfully',
                     'job_description': serializer.data
                 }
@@ -176,8 +170,9 @@ class JobReprocessView(generics.UpdateAPIView):
 
             return Response(
                 {
-                    'message': 'Error reprocessing job description',
-                    'error': str(e)
+                    "success": False,
+                    'error': 'Error reprocessing job description',
+                    'details': str(e)
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
@@ -198,7 +193,6 @@ class JobDeleteView(generics.DestroyAPIView):
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response(
-            {'message': 'Job description deleted successfully'},
+            {"success": True, 'message': 'Job description deleted successfully'},
             status=status.HTTP_200_OK
-            
         )

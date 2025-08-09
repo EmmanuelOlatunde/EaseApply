@@ -202,7 +202,8 @@
             <div class="text-red-600 text-sm">
               <div v-if="typeof error === 'object'">
                 <div v-for="(messages, field) in error" :key="field" class="mb-1 last:mb-0">
-                  <strong>{{ formatFieldName(field) }}:</strong> {{ Array.isArray(messages) ? messages.join(', ') : messages }}
+                  <span v-if="formatFieldName(field)" class="font-medium">{{ formatFieldName(field) }}:</span>
+                  {{ Array.isArray(messages) ? messages.join(', ') : messages }}
                 </div>
               </div>
               <div v-else>{{ error }}</div>
@@ -301,7 +302,8 @@ const formatFieldName = (field) => {
     'email': 'Email',
     'phone': 'Phone',
     'password': 'Password',
-    'password_confirm': 'Confirm Password'
+    'password_confirm': 'Confirm Password',
+    'non_field_errors': ''
   }
   return fieldNames[field] || field
 }
@@ -432,7 +434,14 @@ const handleSubmit = async () => {
     // Handle different types of errors
     if (err.response?.data) {
       const errorData = err.response.data
-      if (typeof errorData === 'object' && !errorData.message) {
+      
+      if (errorData.non_field_errors) {
+        error.value = Array.isArray(errorData.non_field_errors) 
+          ? errorData.non_field_errors.join(', ') 
+          : errorData.non_field_errors
+      }
+      // Handle other validation errors
+      else if (typeof errorData === 'object' && !errorData.message) {
         // Validation errors from API
         error.value = errorData
       } else {

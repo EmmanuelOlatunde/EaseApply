@@ -43,7 +43,7 @@
         <!-- Welcome Section -->
         <div class="mb-8">
           <h1 class="text-3xl font-bold text-ash-900">
-            Welcome back, {{ authStore.user?.full_name || 'User' }}!
+            Welcome back, {{ authStore.user?.username || 'User' }}!
           </h1>
           <p class="text-ash-600 mt-2">Here's an overview of your cover letter generation activity.</p>
         </div>
@@ -236,7 +236,7 @@ const recentResumes = ref([])
 const handleLogout = async () => {
   try {
     await authStore.logout()
-    router.push('/login')
+    router.push('/')
   } catch (error) {
     console.error('Logout error:', error)
   }
@@ -288,7 +288,7 @@ const loadDashboardData = async () => {
     // Handle specific error cases
     if (error.response?.status === 401) {
       await authStore.logout()
-      router.push('/login')
+      router.push('/')
     }
   } finally {
     isLoading.value = false

@@ -102,7 +102,7 @@
       <!-- Back to login link -->
       <div v-if="!success" class="mt-6 text-center">
         <router-link 
-          to="/login" 
+          to="/" 
           class="text-blue-600 hover:text-blue-500 text-sm font-medium"
         >
           ← Back to Sign In
@@ -190,7 +190,7 @@ const submitReset = async () => {
     
     // Optional: Auto-redirect after a delay
     setTimeout(() => {
-      router.push('/login')
+      router.push('/')
     }, 5000)
     
   } catch (err) {
