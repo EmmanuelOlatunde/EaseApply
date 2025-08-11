@@ -61,15 +61,7 @@
                   Change Password
                 </button>
               </li>
-              <li>
-                <button
-                  @click="activeTab = 'preferences'"
-                  class="w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-                  :class="activeTab === 'preferences' ? 'bg-blue-100 text-blue-700' : 'text-ash-600 hover:text-ash-800 hover:bg-ash-50'"
-                >
-                  Preferences
-                </button>
-              </li>
+              
             </ul>
           </nav>
         </div>
@@ -229,80 +221,7 @@
             </form>
           </div>
 
-          <!-- Preferences -->
-          <div v-if="activeTab === 'preferences'" class="bg-white rounded-lg shadow-sm border border-ash-200 p-6">
-            <h2 class="text-lg font-semibold text-ash-800 mb-6">Preferences</h2>
-            
-            <form @submit.prevent="updatePreferences" class="space-y-6">
-              <div>
-                <label class="block text-sm font-medium text-ash-700 mb-4">Default Cover Letter Settings</label>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label class="block text-sm font-medium text-ash-600 mb-2">Default Tone</label>
-                    <select
-                      v-model="preferencesForm.defaultTone"
-                      class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="professional">Professional</option>
-                      <option value="enthusiastic">Enthusiastic</option>
-                      <option value="confident">Confident</option>
-                      <option value="formal">Formal</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label class="block text-sm font-medium text-ash-600 mb-2">Default Length</label>
-                    <select
-                      v-model="preferencesForm.defaultLength"
-                      class="w-full px-3 py-2 border border-ash-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="short">Short (200-300 words)</option>
-                      <option value="medium">Medium (300-400 words)</option>
-                      <option value="long">Long (400-500 words)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-ash-700 mb-4">Email Notifications</label>
-                <div class="space-y-3">
-                  <label class="flex items-center">
-                    <input
-                      v-model="preferencesForm.emailNotifications.generation"
-                      type="checkbox"
-                      class="rounded border-ash-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span class="ml-2 text-sm text-ash-700">Notify when cover letter generation is complete</span>
-                  </label>
-                  
-                  <label class="flex items-center">
-                    <input
-                      v-model="preferencesForm.emailNotifications.tips"
-                      type="checkbox"
-                      class="rounded border-ash-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span class="ml-2 text-sm text-ash-700">Receive weekly job search tips</span>
-                  </label>
-                </div>
-              </div>
-
-              <div v-if="preferencesError" class="text-red-600 text-sm">{{ preferencesError }}</div>
-              <div v-if="preferencesSuccess" class="text-green-600 text-sm">{{ preferencesSuccess }}</div>
-
-              <div class="flex justify-end">
-                <button
-                  type="submit"
-                  :disabled="isUpdatingPreferences"
-                  class="px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span v-if="isUpdatingPreferences">Updating...</span>
-                  <span v-else>Update Preferences</span>
-                </button>
-              </div>
-            </form>
-          </div>
+          
         </div>
       </div>
     </main>
