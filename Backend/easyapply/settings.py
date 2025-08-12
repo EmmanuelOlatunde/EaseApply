@@ -213,30 +213,7 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
-# # Djoser Configuration
-# DJOSER = {
-#     'LOGIN_FIELD': 'email',
-#     'USER_CREATE_PASSWORD_RETYPE': True,
-#     'USERNAME_CHANGED_EMAIL_CONFIRMATION': True,
-#     'PASSWORD_CHANGED_EMAIL_CONFIRMATION': True,
-#     'SEND_CONFIRMATION_EMAIL': True,
-#     'SET_USERNAME_RETYPE': True,
-#     'SET_PASSWORD_RETYPE': True,
-#     'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
-#     'USERNAME_RESET_CONFIRM_URL': 'username/reset/confirm/{uid}/{token}',
-#     'ACTIVATION_URL': 'activate/{uid}/{token}',
-#     'SEND_ACTIVATION_EMAIL': True,
-#     'SERIALIZERS': {
-#         'user_create': 'users.serializers.UserRegistrationSerializer',
-#         'user': 'users.serializers.UserSerializer',
-#         'current_user': 'users.serializers.UserSerializer',
-#         'user_delete': 'djoser.serializers.UserDeleteSerializer',
-#     },
-#     'PERMISSIONS': {
-#         'user': ['rest_framework.permissions.IsAuthenticated'],
-#         'user_list': ['rest_framework.permissions.IsAdminUser'],
-#     }
-# }
+
 
 # Email Configuration (for password reset)
 
@@ -267,12 +244,6 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 FILE_UPLOAD_PERMISSIONS = 0o644
 
 
-# # CORS Configuration (if using frontend)
-# CORS_ALLOWED_ORIGINS = [
-#     "http://127.0.0.1:8000",
-#     "http://localhost:8000",
-  
-# ]
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -321,19 +292,7 @@ LOGGING = {
 
 FRONTEND_URL = "http://localhost:5173"
 
-# # Cache Configuration (optional but recommended)
-# CACHES = {
-#    'default': {
-#         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-#         'LOCATION': 'redis://127.0.0.1:6379/1',
-#     }
-# }
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-#         "LOCATION": "unique-dev",
-#     }
-# }
+
 # Upstash Redis Configuration
 UPSTASH_REDIS_URL = config('UPSTASH_REDIS_URL')
 UPSTASH_REDIS_REST_URL = config('UPSTASH_REDIS_REST_URL')
@@ -354,7 +313,7 @@ CACHES = {
                 'health_check_interval': 30,
             }
         },
-        'KEY_PREFIX': 'myapp',  # Replace with your app prefix
+        'KEY_PREFIX': 'easyapply',  
         'TIMEOUT': 300,  # Default timeout of 5 minutes
     }
 }
@@ -399,7 +358,7 @@ REDIS_SERVICE_CONFIG = {
 # Get the base URL
 base_url = config('CELERY_BROKER_URL')
 
-# Add SSL parameter if it's a rediss:// URL
+# Add SSL parameter 
 if base_url.startswith('rediss://'):
     if '?' in base_url:
         CELERY_BROKER_URL = base_url + '&ssl_cert_reqs=none'
@@ -410,13 +369,6 @@ else:
 
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 
-# CELERY_BROKER_URL = config('CELERY_BROKER_URL')
-# CELERY_RESULT_BACKEND = CELERY_BROKER_URL
-
-# CELERY_BROKER_USE_SSL = {
-#     'ssl_cert_reqs': ssl.CERT_NONE
-# }
-# CELERY_RESULT_BACKEND_USE_SSL = CELERY_BROKER_USE_SSL
 
 # Optional reliability settings
 CELERY_TASK_ALWAYS_EAGER = False
