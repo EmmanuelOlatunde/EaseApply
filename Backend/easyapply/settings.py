@@ -77,10 +77,16 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 WSGI_APPLICATION = 'easyapply.wsgi.application'
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",   # React dev server
-    "http://127.0.0.1:8000",  # Swagger UI
-]
+
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:5173",   # Vue dev server
+        
+    ]
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
