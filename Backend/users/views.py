@@ -12,7 +12,7 @@ from .serializers import (
     ResetPasswordConfirmSerializer
 )
 from common.permissions import IsOwnerOrReadOnly
-from common.utils import get_client_ip, send_verification_email
+from common.utils import get_client_ip, send_verification_email, send_password_reset_email
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -22,7 +22,6 @@ from rest_framework.permissions import AllowAny
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.contrib.auth.tokens import default_token_generator
-from common.utils import send_password_reset_email
 from rest_framework.throttling import UserRateThrottle
 
 
