@@ -73,18 +73,15 @@ TEMPLATES = [
 ]
 
 
-CORS_ALLOW_ALL_ORIGINS = True
-
 WSGI_APPLICATION = 'easyapply.wsgi.application'
-
 
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     CORS_ALLOW_ALL_ORIGINS = False
     CORS_ALLOWED_ORIGINS = [
-        "http://localhost:5173",   # Vue dev server
-        "https://easeapply.netlify.app", #netlify deployed
+        "http://localhost:5173",   # local dev
+        "https://easeapply.netlify.app",  # deployed frontend
     ]
 
 
