@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -75,15 +76,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'easyapply.wsgi.application'
 
+
+CORS_ALLOW_CREDENTIALS = True
+
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
-    CORS_ALLOW_ALL_ORIGINS = False
     CORS_ALLOWED_ORIGINS = [
-        "http://localhost:5173",   # local dev
-        "https://easeapply.netlify.app",  # deployed frontend
+        "http://localhost:5173",         # local dev (if you test prod API locally)
+        "https://easeapply.netlify.app", # deployed frontend
+        # add custom domain here later, e.g. "https://easeapply.com"
     ]
-
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -251,7 +254,7 @@ FILE_UPLOAD_PERMISSIONS = 0o644
 
 
 
-CORS_ALLOW_CREDENTIALS = True
+
 
 # Security Settings
 SECURE_BROWSER_XSS_FILTER = True
