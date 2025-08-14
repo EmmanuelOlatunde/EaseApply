@@ -84,7 +84,7 @@ else:
     CORS_ALLOW_ALL_ORIGINS = False
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:5173",   # Vue dev server
-        
+        "https://easeapply.netlify.app", #netlify deployed
     ]
 
 
