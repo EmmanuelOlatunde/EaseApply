@@ -3,6 +3,8 @@ from django.urls import path, include, re_path
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from django.views.generic.base import RedirectView
+
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -31,6 +33,10 @@ urlpatterns = [
     path('api/jobs/', include('jobs.urls')),
     path('api/resumes/', include('resumes.urls')),
     path('api/analysis/', include('analysis.urls')),
+
+    # redirect root `/` to frontend
+    path("", RedirectView.as_view(url="https://easeapply.netlify.app", permanent=False)),
+
     
     # Swagger/OpenAPI routes
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
