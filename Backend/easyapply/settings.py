@@ -85,6 +85,7 @@ else:
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:5173",         # local dev (if you test prod API locally)
         "https://easeapply.netlify.app", # deployed frontend
+        "https://easeapply-rho.vercel.app", # deployed frontend
         # add custom domain here later, e.g. "https://easeapply.com"
     ]
 
