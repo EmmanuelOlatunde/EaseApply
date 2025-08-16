@@ -85,7 +85,7 @@ const passwordForm = reactive({
 })
 
 // Axios Configuration
-axios.defaults.baseURL = API_BASE_URL
+axios.defaults.baseURL = `${API_BASE_URL}/api`
 axios.interceptors.request.use((config) => {
   if (authToken.value) {
     config.headers.Authorization = `Bearer ${authToken.value}`
