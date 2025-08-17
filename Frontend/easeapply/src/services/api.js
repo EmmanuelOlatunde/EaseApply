@@ -99,13 +99,16 @@ export const authAPI = {
     return response
   },
   
+  // src/services/api.js
   logout: async () => {
     try {
-      await api.post('/users/logout/')
+      const refreshToken = localStorage.getItem('refresh_token')
+      await api.post('/users/logout/', { refresh: refreshToken })
     } finally {
       tokenManager.clearTokens()
     }
   },
+
   
   changePassword: (passwordData) => api.put('/users/change-password/', passwordData),
   
