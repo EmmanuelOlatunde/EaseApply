@@ -1,17 +1,20 @@
 // vite.config.js
-export default defineConfig({
-  plugins: [vue()],
-  base: './', // Add this for correct asset paths
-  server: {
-    proxy: {
-      '/api': {
-        target: import.meta.env.PROD 
-          ? 'https://easeapply.onrender.com' 
-          : 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-        rewrite: path => path.replace(/^\/api/, '')
-      }
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig(({ command, mode }) => {
+  return {
+    plugins: [vue()],
+    base: './',
+    server: {
+      // Only use proxy in development mode
+      proxy: command === 'serve' ? {
+        '/api': {
+          target: 'http://localhost:8000', // Only for local development
+          changeOrigin: true,
+          secure: false,
+        }
+      } : undefined
     }
   }
 })
