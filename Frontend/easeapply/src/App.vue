@@ -8,7 +8,7 @@
 import { onMounted } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useRoute } from 'vue-router'
-import { showToast } from './utils/toast' // adjust this path if needed
+import { showToast } from './api'   // ✅ correct import (same folder as App.vue)
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -24,9 +24,9 @@ onMounted(() => {
   if (status === 'success') {
     showToast('✅ Email verified successfully!')
   } else if (status === 'invalid') {
-    showToast('❌ Invalid verification link.')
+    showToast('❌ Invalid verification link.', 'error')
   } else if (status === 'expired') {
-    showToast('⚠️ Verification link expired.')
+    showToast('⚠️ Verification link expired.', 'warning')
   }
 })
 </script>
