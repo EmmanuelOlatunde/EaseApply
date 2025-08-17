@@ -1,5 +1,5 @@
 import { ref, reactive, onMounted } from 'vue'
-import { authAPI, jobAPI, resumeAPI, analysisAPI, handleAPIError, createFormData, tokenManager } from './api'
+import { authAPI, jobAPI, resumeAPI, analysisAPI, handleAPIError, createFormData, tokenManager } from './services/api'
 
 // -------------------- Global State --------------------
 export const currentView = ref('login')
