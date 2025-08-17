@@ -117,7 +117,7 @@ export const authAPI = {
   
   resendVerification: (email) => api.post('/users/resend-verification/', { email }),
   
-  resetPassword: (email) => api.post('/users/reset-password/', { email }),
+  resetPassword: (email) => api.post('/users/password-reset-request/', { email }),
   
   resetPasswordConfirm: (resetData) => api.post('/users/reset-password-confirm/', resetData),
   

@@ -113,7 +113,7 @@ DATABASES = {
 }
 
 
-
+ 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
@@ -306,8 +306,8 @@ LOGGING = {
     },
 }
 
-FRONTEND_URL = "http://localhost:5173"
-
+# FRONTEND_URL = "http://localhost:5173" or FRONTEND_URL
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173') 
 
 # Upstash Redis Configuration
 UPSTASH_REDIS_URL = config('UPSTASH_REDIS_URL')
