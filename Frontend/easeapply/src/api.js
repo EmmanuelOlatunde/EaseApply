@@ -1,7 +1,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { authAPI, jobAPI, resumeAPI, analysisAPI, handleAPIError, createFormData, tokenManager } from './api'
 
-// Global State
+// -------------------- Global State --------------------
 export const currentView = ref('login')
 export const isAuthenticated = ref(false)
 export const user = ref(null)
@@ -39,7 +39,7 @@ export const toast = reactive({
   type: 'success'
 })
 
-// Form Data
+// -------------------- Form Data --------------------
 export const loginForm = reactive({
   email: '',
   password: ''
@@ -80,42 +80,48 @@ export const passwordForm = reactive({
   new_password2: ''
 })
 
-// Utility Functions
-export const showToast = (message, type = 'success') => {
+// -------------------- Utility Functions --------------------
+let toastTimeout
+export const showToast = (message, type = 'success', duration = 3000) => {
   toast.message = message
   toast.type = type
   toast.show = true
-  setTimeout(() => {
+  clearTimeout(toastTimeout)
+  toastTimeout = setTimeout(() => {
     toast.show = false
-  }, 3000)
+  }, duration)
 }
 
 export const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString()
 }
 
-export const clearAuthForms = () => {
-  Object.keys(loginForm).forEach(key => loginForm[key] = '')
-  Object.keys(registerForm).forEach(key => registerForm[key] = '')
-  Object.keys(resetForm).forEach(key => resetForm[key] = '')
+const resetObject = (obj) => {
+  for (const key in obj) {
+    obj[key] = obj[key] instanceof File ? null : ''
+  }
 }
 
-// Authentication Functions
+export const clearAuthForms = () => {
+  resetObject(loginForm)
+  resetObject(registerForm)
+  resetObject(resetForm)
+}
+
+// -------------------- Authentication --------------------
 export const login = async () => {
   authLoading.value = true
   authError.value = ''
   
   try {
     const response = await authAPI.login(loginForm)
-    
     isAuthenticated.value = true
     user.value = response.data.user
     currentView.value = 'dashboard'
+    initializeProfile(user.value)
     showToast('Successfully logged in!')
-    
-    // Load user data after successful login
+
     await loadUserData()
-    
   } catch (error) {
     authError.value = handleAPIError(error, 'Login failed')
   } finally {
@@ -131,7 +137,7 @@ export const register = async () => {
   try {
     await authAPI.register(registerForm)
     authSuccess.value = 'Account created successfully! Please check your email to verify your account.'
-    Object.keys(registerForm).forEach(key => registerForm[key] = '')
+    resetObject(registerForm)
   } catch (error) {
     authError.value = handleAPIError(error, 'Registration failed')
   } finally {
@@ -149,7 +155,6 @@ export const logout = async () => {
     isAuthenticated.value = false
     user.value = null
     currentView.value = 'login'
-    // Clear all data
     jobs.value = []
     resumes.value = []
     generatedCoverLetter.value = ''
@@ -171,10 +176,9 @@ export const resetPassword = async () => {
   }
 }
 
-// Profile Functions
+// -------------------- Profile --------------------
 export const updateProfile = async () => {
   profileLoading.value = true
-  
   try {
     const response = await authAPI.updateProfile(profileForm)
     user.value = response.data
@@ -188,11 +192,10 @@ export const updateProfile = async () => {
 
 export const changePassword = async () => {
   passwordLoading.value = true
-  
   try {
     await authAPI.changePassword(passwordForm)
     showToast('Password changed successfully!')
-    Object.keys(passwordForm).forEach(key => passwordForm[key] = '')
+    resetObject(passwordForm)
   } catch (error) {
     showToast(handleAPIError(error, 'Failed to change password'), 'error')
   } finally {
@@ -200,7 +203,7 @@ export const changePassword = async () => {
   }
 }
 
-// Job Functions
+// -------------------- Jobs --------------------
 export const loadJobs = async () => {
   try {
     const response = await jobAPI.listAll()
@@ -213,13 +216,12 @@ export const loadJobs = async () => {
 
 export const createJob = async () => {
   jobLoading.value = true
-  
   try {
-    const response = await jobAPI.create(jobForm)
-    jobs.value.push(response.data)
+    const { data } = await jobAPI.create(jobForm)
+    jobs.value = [...jobs.value, data]
     showToast('Job added successfully!')
     showJobForm.value = false
-    resetJobForm()
+    resetObject(jobForm)
   } catch (error) {
     showToast(handleAPIError(error, 'Failed to add job'), 'error')
   } finally {
@@ -237,11 +239,7 @@ export const deleteJob = async (jobId) => {
   }
 }
 
-export const resetJobForm = () => {
-  Object.keys(jobForm).forEach(key => jobForm[key] = '')
-}
-
-// Resume Functions
+// -------------------- Resumes --------------------
 export const loadResumes = async () => {
   try {
     const response = await resumeAPI.list()
@@ -263,18 +261,13 @@ export const uploadResume = async () => {
   }
 
   resumeLoading.value = true
-  
   try {
-    const formData = createFormData({
-      title: resumeForm.title,
-      file: resumeForm.file
-    })
-    
+    const formData = createFormData(resumeForm)
     const response = await resumeAPI.upload(formData)
-    resumes.value.push(response.data)
+    resumes.value = [...resumes.value, response.data]
     showToast('Resume uploaded successfully!')
     showResumeForm.value = false
-    resetResumeForm()
+    resetObject(resumeForm)
   } catch (error) {
     showToast(handleAPIError(error, 'Failed to upload resume'), 'error')
   } finally {
@@ -292,12 +285,7 @@ export const deleteResume = async (resumeId) => {
   }
 }
 
-export const resetResumeForm = () => {
-  resumeForm.title = ''
-  resumeForm.file = null
-}
-
-// Cover Letter Generation
+// -------------------- Cover Letter --------------------
 export const generateCoverLetter = async () => {
   if (!selectedResumeId.value || !selectedJobId.value) {
     showToast('Please select both a resume and a job', 'error')
@@ -308,12 +296,11 @@ export const generateCoverLetter = async () => {
   generatedCoverLetter.value = ''
   
   try {
-    const response = await analysisAPI.generateCoverLetter({
+    const { data } = await analysisAPI.generateCoverLetter({
       resume_id: selectedResumeId.value,
       job_id: selectedJobId.value
     })
-    
-    generatedCoverLetter.value = response.data.cover_letter
+    generatedCoverLetter.value = data.cover_letter
     showToast('Cover letter generated successfully!')
   } catch (error) {
     showToast(handleAPIError(error, 'Failed to generate cover letter'), 'error')
@@ -326,42 +313,32 @@ export const copyCoverLetter = async () => {
   try {
     await navigator.clipboard.writeText(generatedCoverLetter.value)
     copied.value = true
-    setTimeout(() => {
-      copied.value = false
-    }, 2000)
+    setTimeout(() => { copied.value = false }, 2000)
     showToast('Cover letter copied to clipboard!')
-  } catch (error) {
+  } catch {
     showToast('Failed to copy to clipboard', 'error')
   }
 }
 
+const downloadElement = document.createElement('a')
 export const downloadCoverLetter = () => {
   if (!generatedCoverLetter.value) {
     showToast('No cover letter to download', 'error')
     return
   }
-
   const blob = new Blob([generatedCoverLetter.value], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'cover-letter.txt'
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  downloadElement.href = URL.createObjectURL(blob)
+  downloadElement.download = 'cover-letter.txt'
+  downloadElement.click()
+  URL.revokeObjectURL(downloadElement.href)
   showToast('Cover letter downloaded!')
 }
 
-// Load User Data
+// -------------------- Helpers --------------------
 export const loadUserData = async () => {
-  await Promise.all([
-    loadJobs(),
-    loadResumes()
-  ])
+  await Promise.all([loadJobs(), loadResumes()])
 }
 
-// Initialize Profile Form
 export const initializeProfile = (userData) => {
   if (userData) {
     profileForm.first_name = userData.first_name || ''
@@ -370,30 +347,24 @@ export const initializeProfile = (userData) => {
   }
 }
 
-// Check Authentication Status
 export const checkAuthStatus = async () => {
   const token = tokenManager.getAccessToken()
-  
   if (!token) {
     isAuthenticated.value = false
     return false
   }
-  
+
   try {
-    const response = await authAPI.getProfile()
-    user.value = response.data
+    const [profileRes] = await Promise.all([
+      authAPI.getProfile(),
+      loadUserData()
+    ])
+    user.value = profileRes.data
     isAuthenticated.value = true
     currentView.value = 'dashboard'
-    
-    // Initialize profile form with user data
     initializeProfile(user.value)
-    
-    // Load user data
-    await loadUserData()
-    
     return true
-  } catch (error) {
-    // Token is invalid or expired
+  } catch {
     tokenManager.clearTokens()
     isAuthenticated.value = false
     user.value = null
@@ -401,12 +372,11 @@ export const checkAuthStatus = async () => {
   }
 }
 
-// Initialize the application
 export const initializeApp = async () => {
   await checkAuthStatus()
 }
 
-// Auto-initialize on mount
+// -------------------- Auto-init --------------------
 onMounted(() => {
   initializeApp()
 })
