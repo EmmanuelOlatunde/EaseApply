@@ -1,23 +1,16 @@
-// import { defineConfig } from 'vite'
-// import vue from '@vitejs/plugin-vue'
-
-// // https://vite.dev/config/
-// export default defineConfig({
-//   plugins: [vue()],
-// })
-
-
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-
+// vite.config.js
 export default defineConfig({
   plugins: [vue()],
+  base: './', // Add this for correct asset paths
   server: {
     proxy: {
       '/api': {
-        target: 'https://easeapply.onrender.com',
+        target: import.meta.env.PROD 
+          ? 'https://easeapply.onrender.com' 
+          : 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
+        rewrite: path => path.replace(/^\/api/, '')
       }
     }
   }
