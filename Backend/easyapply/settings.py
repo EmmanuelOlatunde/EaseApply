@@ -86,6 +86,7 @@ else:
         "http://localhost:5173",         # local dev (if you test prod API locally)
         "https://easeapply.netlify.app", # deployed frontend
         "https://easeapply-rho.vercel.app", # deployed frontend
+        "https://easeapply-hazel.vercel.app",
         # add custom domain here later, e.g. "https://easeapply.com"
     ]
 
