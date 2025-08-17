@@ -85,10 +85,15 @@ else:
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:5173",         # local dev (if you test prod API locally)
         "https://easeapply.netlify.app", # deployed frontend
-        "https://easeapply-rho.vercel.app", # deployed frontend
         "https://easeapply-hazel.vercel.app",
         # add custom domain here later, e.g. "https://easeapply.com"
     ]
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "https://easeapply.netlify.app",
+    "https://easeapply-hazel.vercel.app",
+]
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
