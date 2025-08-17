@@ -35,7 +35,7 @@ urlpatterns = [
     path('api/analysis/', include('analysis.urls')),
 
     # redirect root `/` to frontend
-    path("", RedirectView.as_view(url="https://easeapply.netlify.app", permanent=False)),
+    path("", RedirectView.as_view(url="https://easeapply-hazel.vercel.app", permanent=False)),
 
     
     # Swagger/OpenAPI routes
