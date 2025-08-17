@@ -119,13 +119,13 @@ export const authAPI = {
   
   resetPassword: (email) => api.post('/users/password-reset-request/', { email }),
   
-  resetPasswordConfirm: (resetData) => api.post('/users/reset-password-confirm/', resetData),
+  resetPasswordConfirm: (resetData) => api.post('/reset-password-confirm/', resetData),
   
   verifyEmail: (uidb64, token) => api.get(`/users/email-verify/${uidb64}/${token}/`),
   
   refreshToken: (refreshToken) => api.post('/users/token/refresh/', { refresh: refreshToken })
 }
-
+ 
 // Jobs API calls
 export const jobAPI = {
   list: (page = 1) => api.get(`/jobs/my-jobs/?page=${page}`),

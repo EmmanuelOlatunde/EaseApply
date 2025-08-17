@@ -31,7 +31,15 @@ const routes = [
     component: PasswordReset,
     meta: { requiresAuth: false }
   },
+  {
+    path: '/reset-password-confirm',
+    name: 'ResetPasswordConfirm',
+    component: () => import('../views/PasswordReset.vue'),
+    meta: { requiresAuth: false }
+  },
+
 ]
+
 
 const router = createRouter({
   history: createWebHistory(),
