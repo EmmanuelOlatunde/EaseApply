@@ -115,7 +115,6 @@ const login = async () => {
   
   try {
     const response = await axios.post('/users/login/', loginForm)
-    console.log('Login response:', response.data)
     authToken.value = response.data.access
     localStorage.setItem('authToken', authToken.value)
     isAuthenticated.value = true
@@ -124,7 +123,6 @@ const login = async () => {
     showToast('Successfully logged in!')
     await loadUserData()
   } catch (error) {
-    console.error('Login error:', error)
     authError.value = error.response?.data?.detail || 'Login failed'
   } finally {
     authLoading.value = false
@@ -137,12 +135,10 @@ const register = async () => {
   authSuccess.value = ''
   
   try {
-    const response = await axios.post('/users/register/', registerForm)
-    console.log('Register response:', response.data)
+    await axios.post('/users/register/', registerForm)
     authSuccess.value = 'Account created successfully! Please check your email to verify your account.'
     Object.keys(registerForm).forEach(key => registerForm[key] = '')
   } catch (error) {
-    console.error('Register error:', error)
     authError.value = error.response?.data?.detail || 'Registration failed'
   } finally {
     authLoading.value = false
@@ -151,8 +147,7 @@ const register = async () => {
 
 const logout = async () => {
   try {
-    const response = await axios.post('/users/logout/')
-    console.log('Logout response:', response.data)
+    await axios.post('/users/logout/')
   } catch (error) {
     console.error('Logout error:', error)
   } finally {
@@ -170,12 +165,10 @@ const resetPassword = async () => {
   authError.value = ''
   
   try {
-    const response = await axios.post('/users/reset-password/', resetForm)
-    console.log('Reset password response:', response.data)
+    await axios.post('/users/reset-password/', resetForm)
     showToast('Password reset link sent to your email!')
     currentView.value = 'login'
   } catch (error) {
-    console.error('Reset password error:', error)
     authError.value = error.response?.data?.detail || 'Reset failed'
   } finally {
     authLoading.value = false
@@ -188,11 +181,9 @@ const updateProfile = async () => {
   
   try {
     const response = await axios.put('/users/profile/', profileForm)
-    console.log('Update profile response:', response.data)
     user.value = response.data
     showToast('Profile updated successfully!')
   } catch (error) {
-    console.error('Update profile error:', error)
     showToast('Failed to update profile', 'error')
   } finally {
     profileLoading.value = false
@@ -203,12 +194,10 @@ const changePassword = async () => {
   passwordLoading.value = true
   
   try {
-    const response = await axios.put('/users/change-password/', passwordForm)
-    console.log('Change password response:', response.data)
+    await axios.put('/users/change-password/', passwordForm)
     showToast('Password changed successfully!')
     Object.keys(passwordForm).forEach(key => passwordForm[key] = '')
   } catch (error) {
-    console.error('Change password error:', error)
     showToast('Failed to change password', 'error')
   } finally {
     passwordLoading.value = false
@@ -219,7 +208,6 @@ const changePassword = async () => {
 const loadJobs = async () => {
   try {
     const response = await axios.get('/jobs/')
-    console.log('Load jobs response:', response.data)
     jobs.value = response.data
   } catch (error) {
     console.error('Failed to load jobs:', error)
@@ -231,13 +219,11 @@ const createJob = async () => {
   
   try {
     const response = await axios.post('/jobs/', jobForm)
-    console.log('Create job response:', response.data)
     jobs.value.push(response.data)
     showToast('Job added successfully!')
     showJobForm.value = false
     resetJobForm()
   } catch (error) {
-    console.error('Create job error:', error)
     showToast('Failed to add job', 'error')
   } finally {
     jobLoading.value = false
@@ -252,7 +238,6 @@ const resetJobForm = () => {
 const loadResumes = async () => {
   try {
     const response = await axios.get('/resumes/')
-    console.log('Load resumes response:', response.data)
     resumes.value = response.data
   } catch (error) {
     console.error('Failed to load resumes:', error)
@@ -276,14 +261,12 @@ const uploadResume = async () => {
         'Content-Type': 'multipart/form-data'
       }
     })
-    console.log('Upload resume response:', response.data)
     
     resumes.value.push(response.data)
     showToast('Resume uploaded successfully!')
     showResumeForm.value = false
     resetResumeForm()
   } catch (error) {
-    console.error('Upload resume error:', error)
     showToast('Failed to upload resume', 'error')
   } finally {
     resumeLoading.value = false
@@ -308,12 +291,10 @@ const generateCoverLetter = async () => {
       resume_id: selectedResumeId.value,
       job_id: selectedJobId.value
     })
-    console.log('Generate cover letter response:', response.data)
     
     generatedCoverLetter.value = response.data.cover_letter
     showToast('Cover letter generated successfully!')
   } catch (error) {
-    console.error('Generate cover letter error:', error)
     showToast('Failed to generate cover letter', 'error')
   } finally {
     generationLoading.value = false
@@ -329,7 +310,6 @@ const copyCoverLetter = async () => {
     }, 2000)
     showToast('Cover letter copied to clipboard!')
   } catch (error) {
-    console.error('Copy cover letter error:', error)
     showToast('Failed to copy to clipboard', 'error')
   }
 }
@@ -359,7 +339,6 @@ onMounted(async () => {
   if (authToken.value) {
     try {
       const response = await axios.get('/users/profile/')
-      console.log('Profile response on mount:', response.data)
       user.value = response.data
       isAuthenticated.value = true
       currentView.value = 'dashboard'
@@ -371,7 +350,6 @@ onMounted(async () => {
       
       await loadUserData()
     } catch (error) {
-      console.error('Profile error on mount:', error)
       // Token is invalid
       authToken.value = ''
       localStorage.removeItem('authToken')
