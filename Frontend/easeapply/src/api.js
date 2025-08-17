@@ -147,11 +147,25 @@ export const register = async () => {
 
 export const logout = async () => {
   try {
-    await authAPI.logout()
+    const refreshToken = localStorage.getItem('refresh_token')
+
+    await authAPI.post(
+      '/users/logout/',
+      { refresh: refreshToken },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      }
+    )
+
     showToast('Successfully logged out!')
   } catch (error) {
     console.error('Logout error:', error)
   } finally {
+    // clear frontend state
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
     isAuthenticated.value = false
     user.value = null
     currentView.value = 'login'
