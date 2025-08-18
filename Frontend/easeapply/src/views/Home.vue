@@ -356,13 +356,12 @@ onMounted(() => {
   // Only show toast if not already shown this session
   if (status && !sessionStorage.getItem('emailVerificationToastShown')) {
     if (status === 'success') {
-      showToast('✅ Email verified successfully!')
+      showToast('✅ Email verified successfully!', 'success', 10000)
     } else if (status === 'invalid') {
-      showToast('❌ Invalid verification link.', 'error')
+      showToast('❌ Invalid verification link.', 'error', 10000)
     } else if (status === 'expired') {
-      showToast('⚠️ Verification link expired.', 'warning')
+      showToast('⚠️ Verification link expired.', 'warning', 10000)
     }
-
     // mark as shown
     sessionStorage.setItem('emailVerificationToastShown', 'true')
   }
