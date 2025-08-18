@@ -2,7 +2,7 @@
 
 # **EaseApply Backend: AI Resume & Job Match API**
 
-🚀 **AI-powered Django REST Framework backend** that analyzes resumes, matches them against job descriptions, and generates **tailored ATS-friendly cover letters**.
+🚀 **AI-powered Django REST Framework backend** that analyzes resumes, and generates **tailored ATS-friendly cover letters**.
 
 Frontend (Vue.js) → [EaseApply Frontend](https://easeapply-hazel.vercel.app)
 Backend (Django + DRF) → [EaseApply Backend](https://easeapply.onrender.com)
@@ -34,8 +34,7 @@ Swagger Docs → [API Documentation](https://easeapply.onrender.com/swagger/?for
 
 * **AI-Powered Resume & Job Matching**
 
-  * Analyze resume vs job description
-  * Generate match score, missing keywords, and improvement suggestions
+  * Analyze resume and job description
   * Create tailored ATS-optimized cover letters via OpenAI GPT-4o-mini (through OpenRouter/DeepSeek)
 
 * **Developer-Friendly**
@@ -78,7 +77,7 @@ easeapply-backend/
 * **User** → Authentication & profile management
 * **Resume** → Stores uploaded resume and extracted text
 * **JobDescription** → Stores job postings and metadata
-* **AnalysisResult** → Stores AI match score, missing keywords, and cover letters
+* **AnalysisResult** → Generated cover letter
 
 ---
 
@@ -109,7 +108,7 @@ EMAIL_HOST=smtp.yourprovider.com
 EMAIL_HOST_USER=your-email
 EMAIL_HOST_PASSWORD=your-email-password
 
-OPENROUTER_API_KEY=sk-your-openrouter-key
+*_API_KEY=sk-your-openrouter-key
 CORS_ALLOWED_ORIGINS=https://easeapply-hazel.vercel.app,http://localhost:5173
 ```
 
@@ -182,7 +181,6 @@ Response:
 
 ### Analysis
 
-* `POST /api/analysis/` → Resume vs Job analysis
 * `POST /api/analysis/generate-cover-letter/` → Generate cover letter
 
 ---
@@ -200,7 +198,7 @@ Response:
 ## 🏆 Why EaseApply is Awesome
 
 * Real **AI + Django REST Framework** integration
-* Demonstrates **resume parsing, AI matching, and cover letter generation**
+* Demonstrates **resume parsing, and cover letter generation**
 * Solves a real HR tech pain point
 * Perfect for **portfolio, SaaS MVP, or freelance projects**
 
