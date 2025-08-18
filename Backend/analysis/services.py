@@ -16,7 +16,7 @@ class OpenRouterService:
 
     FALLBACK_MODELS = [
         #("google/gemma-2-9b-it:free", "OPENROUTER_API_KEY_DEEPSEEK"),
-        ("qwen/qwen-2.5-72b-instruct:free", "OPENROUTER_API_KEY_KIMI"),
+        # ("qwen/qwen-2.5-72b-instruct:free", "OPENROUTER_API_KEY_KIMI"),
         ("moonshotai/kimi-k2:free", "OPENROUTER_API_KEY_KIMI"),
         ("cognitivecomputations/dolphin-mistral-24b-venice-edition:free", "OPENROUTER_API_KEY_DEEPSEEK"),
         ("qwen/qwen3-235b-a22b:free", "OPENROUTER_API_KEY_QWEN"),
