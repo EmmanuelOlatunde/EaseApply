@@ -132,31 +132,6 @@ python manage.py runserver
 
 ## 🧠 AI Features
 
-### Resume-Job Analysis
-
-**POST** `/api/analysis/`
-
-Request:
-
-```json
-{
-  "resume_id": "uuid-of-resume",
-  "job_id": "uuid-of-job"
-}
-```
-
-Response:
-
-```json
-{
-  "match_score": 82,
-  "missing_keywords": ["GraphQL", "Docker", "CI/CD"],
-  "suggestions": "Highlight cloud deployment experience and add Docker knowledge."
-}
-```
-
----
-
 ### Cover Letter Generation
 
 **POST** `/api/analysis/generate-cover-letter/`
