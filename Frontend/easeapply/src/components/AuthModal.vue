@@ -29,15 +29,6 @@
               <div class="mt-2 text-sm text-green-700">
                 <p>A verification email has been sent to your email address. Please check your inbox and click the verification link to activate your account.</p>
               </div>
-              <div class="mt-3">
-                <button
-                  @click="resendVerification"
-                  :disabled="isResending"
-                  class="text-sm text-green-600 hover:text-green-500 font-medium disabled:opacity-50"
-                >
-                  {{ isResending ? 'Resending...' : "Didn't receive email? Resend verification" }}
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -279,7 +270,7 @@ const authStore = useAuthStore()
 const isLogin = ref(true)
 const isForgotPassword = ref(false)
 const isLoading = ref(false)
-const isResending = ref(false)
+
 const error = ref('')
 const registrationSuccess = ref(false)
 const resetPasswordSuccess = ref(false)
@@ -360,20 +351,6 @@ const goToForgotPassword = () => {
   }
 }
 
-const resendVerification = async () => {
-  if (!form.value.email) return
-  
-  isResending.value = true
-  try {
-    await authAPI.resendVerification(form.value.email)
-    // You might want to show a success message here
-  } catch (err) {
-    console.error('Failed to resend verification:', err)
-    // You might want to show an error message here
-  } finally {
-    isResending.value = false
-  }
-}
 
 const handleForgotPassword = async () => {
   error.value = ''

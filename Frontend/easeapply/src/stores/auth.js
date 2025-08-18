@@ -156,7 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       isLoading.value = false
     }
-  }
+  } 
 
   // Initialize user from token if available
   const initializeAuth = async () => {

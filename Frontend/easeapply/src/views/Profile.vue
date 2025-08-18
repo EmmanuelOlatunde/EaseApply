@@ -95,7 +95,20 @@
                     readonly
                   />
                   <p class="text-xs text-ash-500 mt-1">Email cannot be changed</p>
+
+                  <div v-if="!authStore.user?.is_verified" class="mt-3">
+                    <button
+                      @click="resendVerification"
+                      :disabled="isResending"
+                      class="text-sm text-green-600 hover:text-green-500 font-medium disabled:opacity-50"
+                    >
+                      {{ isResending ? 'Resending...' : "Didn't receive email? Resend verification" }}
+                    </button>
+                    <p v-if="verificationSuccess" class="text-green-600 text-xs mt-1">{{ verificationSuccess }}</p>
+                    <p v-if="verificationError" class="text-red-600 text-xs mt-1">{{ verificationError }}</p>
+                  </div>
                 </div>
+
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -442,4 +455,30 @@ onMounted(() => {
     loadProfile()
   }
 })
+
+const isResending = ref(false)
+const verificationSuccess = ref('')
+const verificationError = ref('')
+
+const resendVerification = async () => {
+  isResending.value = true
+  verificationSuccess.value = ''
+  verificationError.value = ''
+
+  try {
+    await authAPI.resendVerification() // no need for email, backend uses logged-in user
+    verificationSuccess.value = 'Verification email has been sent!'
+    setTimeout(() => (verificationSuccess.value = ''), 3000)
+  } catch (err) {
+    console.error('Failed to resend verification:', err)
+    verificationError.value =
+      err.response?.data?.message ||
+      err.response?.data?.detail ||
+      'Failed to resend verification email'
+    setTimeout(() => (verificationError.value = ''), 3000)
+  } finally {
+    isResending.value = false
+  }
+}
+
 </script>
