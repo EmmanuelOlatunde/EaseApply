@@ -5,12 +5,11 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig(({ command, mode }) => {
   return {
     plugins: [vue()],
-    base: './',
+    base: '/',  // 👈 absolute path instead of './'
     server: {
-      // Only use proxy in development mode
       proxy: command === 'serve' ? {
         '/api': {
-          target: 'http://localhost:8000', // Only for local development
+          target: 'http://localhost:8000',
           changeOrigin: true,
           secure: false,
         }
