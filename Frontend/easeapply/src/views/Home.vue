@@ -213,6 +213,10 @@ import CoverLetterOutput from '../components/CoverLetterOutput.vue'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import AuthModal from '../components/AuthModal.vue'
 
+// ✅ import router + toast
+import { useRoute, useRouter } from 'vue-router'
+import { showToast } from '../api'
+
 const authStore = useAuthStore()
 
 // Form data
@@ -341,7 +345,33 @@ const handleLogout = async () => {
   await authStore.logout()
 }
 
+
+// ✅ Email verification toast feature (one-time per session)
+const route = useRoute()
+const router = useRouter()
+
 onMounted(() => {
-  // Any initialization code
+  const status = route.query.status
+
+  // Only show toast if not already shown this session
+  if (status && !sessionStorage.getItem('emailVerificationToastShown')) {
+    if (status === 'success') {
+      showToast('✅ Email verified successfully!')
+    } else if (status === 'invalid') {
+      showToast('❌ Invalid verification link.', 'error')
+    } else if (status === 'expired') {
+      showToast('⚠️ Verification link expired.', 'warning')
+    }
+
+    // mark as shown
+    sessionStorage.setItem('emailVerificationToastShown', 'true')
+  }
+
+  // Clear query params after toast so refresh doesn't trigger it again
+  if (status) {
+    router.replace({ query: {} })
+  }
 })
+
 </script>
+
