@@ -5,22 +5,31 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useRoute } from 'vue-router'
-import { showToast } from './api'   // ✅ correct import (same folder as App.vue)
+import { showToast } from './api'
 
 const authStore = useAuthStore()
 const route = useRoute()
 
 onMounted(() => {
-  // Initialize app - check if user is already logged in
   if (authStore.token) {
     console.log('User is already authenticated')
   }
 
-  // Check for email verification status in query params
-  const status = route.query.status
+  checkStatus(route.query.status)
+})
+
+watch(
+  () => route.query.status,
+  (newStatus) => {
+    checkStatus(newStatus)
+  },
+  { immediate: true }
+)
+
+function checkStatus(status) {
   if (status === 'success') {
     showToast('✅ Email verified successfully!')
   } else if (status === 'invalid') {
@@ -28,9 +37,5 @@ onMounted(() => {
   } else if (status === 'expired') {
     showToast('⚠️ Verification link expired.', 'warning')
   }
-})
+}
 </script>
-
-<style>
-/* Global styles are imported in main.js */
-</style>
