@@ -1,66 +1,94 @@
+---
 
+# **EaseApply Backend: AI Resume & Job Match API**
 
-# **EaseApply: AI Resume & Job Match API**
+🚀 **AI-powered Django REST Framework backend** that analyzes resumes, matches them against job descriptions, and generates **tailored ATS-friendly cover letters**.
 
-🚀 **AI-powered backend that analyzes resumes against job descriptions and generates tailored cover letters.**
-
-This Django REST Framework project helps job seekers **optimize their resumes** and **instantly generate professional cover letters** for specific roles. It uses **OpenAI GPT-4o-mini** for smart text analysis and ATS-style scoring.
+Frontend (Vue.js) → [EaseApply Frontend](https://easeapply-hazel.vercel.app)
+Backend (Django + DRF) → [EaseApply Backend](https://easeapply.onrender.com)
+Swagger Docs → [API Documentation](https://easeapply.onrender.com/swagger/?format=openapi)
 
 ---
 
-## ✨ **Features**
+## ✨ Features
 
-✅ **Resume Upload & Parsing** – Upload PDF/DOCX, extract clean text
-✅ **Job Description Management** – Store and manage job postings
-✅ **AI Resume Analysis** – Get a **match score**, **missing keywords**, and **improvement suggestions**
-✅ **AI Cover Letter Generation** – Instantly generate a **tailored, ATS-friendly cover letter**
-✅ **JWT Authentication** – Secure API access
-✅ **Swagger API Docs** – Auto-generated API documentation
-✅ **Scalable Modular Architecture** – Separate apps for `users`, `resumes`, `jobs`, `analysis`
+* **Authentication & User Management**
+
+  * JWT-based login and registration (access + refresh tokens)
+  * Email verification with tokenized links
+  * Password reset, change password, and logout (refresh blacklist)
+  * Resend verification endpoint
+
+* **Resume Management**
+
+  * Upload PDF/DOCX resumes
+  * Parse resumes into structured JSON (skills, education, work experience)
+  * Reparse resumes on demand
+  * Analytics on extracted resume data
+
+* **Job Description Management**
+
+  * Upload or paste job descriptions
+  * Store, edit, and delete postings
+  * Reprocess jobs to improve parsing quality
+
+* **AI-Powered Resume & Job Matching**
+
+  * Analyze resume vs job description
+  * Generate match score, missing keywords, and improvement suggestions
+  * Create tailored ATS-optimized cover letters via OpenAI GPT-4o-mini (through OpenRouter/DeepSeek)
+
+* **Developer-Friendly**
+
+  * Swagger / ReDoc auto-generated API docs
+  * Modular Django app structure
+  * Scalable with PostgreSQL (Neon DB) and Render deployment
 
 ---
 
-## 🏗️ **Tech Stack**
+## 🏗️ Tech Stack
 
-* **Backend:** Django + Django REST Framework
-* **AI Integration:** OpenAI GPT-4o-mini
-* **Database:** PostgreSQL (or SQLite for development)
-* **Auth:** JWT via `djangorestframework-simplejwt`
+* **Backend:** Django REST Framework
+* **Database:** PostgreSQL (Neon)
+* **AI Layer:** OpenAI GPT-4o-mini via OpenRouter / DeepSeek GPT API
 * **File Parsing:** PyPDF2, python-docx
-* **Docs:** drf-yasg (Swagger/OpenAPI)
+* **Auth & Security:** JWT (djangorestframework-simplejwt), DRF throttling
+* **Docs:** drf-yasg (Swagger / OpenAPI)
+* **Deployment:** Backend on Render, Frontend on Vercel
 
 ---
 
-## 📂 **Project Structure**
+## 📂 Project Structure
 
 ```
-resume_match_api/
-├── config/            # Django project settings
-├── users/             # Authentication & JWT
-├── resumes/           # Resume upload & parsing
-├── jobs/              # Job description management
-├── analysis/          # AI resume-job analysis & cover letters
-├── common/            # Shared utils, permissions
-└── media/             # Uploaded files
+easeapply-backend/
+├── config/          # Django project settings
+├── users/           # Authentication & JWT
+├── resumes/         # Resume upload & parsing
+├── jobs/            # Job description management
+├── analysis/        # AI-based analysis & cover letter generation
+├── common/          # Shared utils, permissions
+└── media/           # Uploaded files
 ```
 
 ---
 
-## 🔑 **Key Models**
+## 🔑 Key Models
 
-* **Resume** → Stores uploaded resume + extracted text
-* **JobDescription** → Stores job title + description
-* **AnalysisResult** → Stores AI match score, missing keywords, suggestions, cover letter
+* **User** → Authentication & profile management
+* **Resume** → Stores uploaded resume and extracted text
+* **JobDescription** → Stores job postings and metadata
+* **AnalysisResult** → Stores AI match score, missing keywords, and cover letters
 
 ---
 
-## 🚀 **Getting Started**
+## 🚀 Getting Started
 
-### 1️⃣ **Clone & Install**
+### 1️⃣ Clone & Install
 
 ```bash
-git clone https://github.com/yourusername/ai-resume-match-api.git
-cd ai-resume-match-api
+git clone https://github.com/yourusername/easeapply-backend.git
+cd easeapply-backend
 
 python -m venv venv
 source venv/bin/activate  # (Windows: venv\Scripts\activate)
@@ -68,47 +96,47 @@ source venv/bin/activate  # (Windows: venv\Scripts\activate)
 pip install -r requirements.txt
 ```
 
----
-
-### 2️⃣ **Environment Variables**
+### 2️⃣ Environment Variables
 
 Create a `.env` file:
 
 ```
 SECRET_KEY=your-django-secret
 DEBUG=True
-DATABASE_URL=sqlite:///db.sqlite3
+DATABASE_URL=postgres://user:password@host:5432/easeapply
 
-OPENAI_API_KEY=sk-your-openai-key
+EMAIL_HOST=smtp.yourprovider.com
+EMAIL_HOST_USER=your-email
+EMAIL_HOST_PASSWORD=your-email-password
+
+OPENROUTER_API_KEY=sk-your-openrouter-key
+CORS_ALLOWED_ORIGINS=https://easeapply-hazel.vercel.app,http://localhost:5173
 ```
 
----
-
-### 3️⃣ **Run Migrations**
+### 3️⃣ Run Migrations
 
 ```bash
 python manage.py migrate
 ```
 
----
-
-### 4️⃣ **Start the Server**
+### 4️⃣ Start the Server
 
 ```bash
 python manage.py runserver
 ```
 
-✅ API will run at `http://127.0.0.1:8000/`
-
-✅ Swagger docs at `http://127.0.0.1:8000/swagger/`
+* Local API: `http://127.0.0.1:8000/api/`
+* Swagger docs: `http://127.0.0.1:8000/swagger/`
 
 ---
 
-## 🧠 **AI Features**
+## 🧠 AI Features
 
-### **1. Resume-Job Analysis**
+### Resume-Job Analysis
 
-POST `/api/analyze/`
+**POST** `/api/analysis/`
+
+Request:
 
 ```json
 {
@@ -117,7 +145,7 @@ POST `/api/analyze/`
 }
 ```
 
-✅ Returns:
+Response:
 
 ```json
 {
@@ -129,9 +157,11 @@ POST `/api/analyze/`
 
 ---
 
-### **2. Cover Letter Generation**
+### Cover Letter Generation
 
-POST `/api/cover-letter/`
+**POST** `/api/analysis/generate-cover-letter/`
+
+Request:
 
 ```json
 {
@@ -140,50 +170,70 @@ POST `/api/cover-letter/`
 }
 ```
 
-✅ Returns a tailored **cover letter**:
+Response:
 
+```json
+{
+  "cover_letter": "Dear Hiring Manager, I’m excited to apply for the Backend Engineer role at XYZ Company..."
+}
 ```
-Dear Hiring Manager,  
-I’m excited to apply for the Backend Engineer role at XYZ Company...
-```
 
 ---
 
-## 📌 **Future Enhancements**
+## 🔗 API Overview (Key Endpoints)
 
-* ✅ **Async AI requests** with Celery + Redis
-* ✅ **LinkedIn job scraping** integration
-* ✅ **Multi-language resume support**
-* ✅ **Local AI models (HuggingFace) for cheaper inference**
+### Auth
+
+* `POST /api/users/register/` → Register new user
+* `POST /api/users/login/` → Obtain JWT token pair
+* `POST /api/users/logout/` → Logout and blacklist refresh token
+* `GET /api/users/email-verify/{uidb64}/{token}/` → Verify email
+* `POST /api/users/password-reset-request/` → Request reset link
+* `POST /api/users/reset-password-confirm/` → Reset password
+* `PUT /api/users/change-password/` → Change password
+* `GET /api/users/profile/` → Get user profile
+
+### Resumes
+
+* `POST /api/resumes/` → Upload & parse resume
+* `GET /api/resumes/{id}/` → Retrieve parsed resume
+* `PUT /api/resumes/{id}/reparse/` → Reparse resume
+
+### Jobs
+
+* `POST /api/jobs/` → Create job posting
+* `GET /api/jobs/my-jobs/` → List jobs for user
+* `PUT /api/jobs/reprocess/{id}/` → Reprocess job posting
+
+### Analysis
+
+* `POST /api/analysis/` → Resume vs Job analysis
+* `POST /api/analysis/generate-cover-letter/` → Generate cover letter
 
 ---
 
-## 🏆 **Why This Project is Awesome**
+## 📌 Future Enhancements
 
-* Shows **real AI integration** with Django REST Framework
-* Demonstrates **prompt engineering & JSON parsing**
-* Solves a **real-world HR tech problem**
-* Perfect for **portfolio, SaaS MVP, or freelance gigs**
-
----
-
-## 📜 **License**
-
-MIT License – feel free to use & modify.
+* ✅ Async AI requests with Celery + Redis
+* ✅ LinkedIn job scraping integration
+* ✅ Multi-language resume parsing
+* ✅ Local AI models (HuggingFace) for cheaper inference
+* ✅ Recruiter analytics dashboard
 
 ---
 
-## 💡 **Want to Try It?**
+## 🏆 Why EaseApply is Awesome
 
-1. **Fork & clone this repo**
-2. Get a **free OpenAI API key**
-3. Run it locally & analyze your own resume!
+* Real **AI + Django REST Framework** integration
+* Demonstrates **resume parsing, AI matching, and cover letter generation**
+* Solves a real HR tech pain point
+* Perfect for **portfolio, SaaS MVP, or freelance projects**
 
 ---
 
-Would you like me to:
+## 📜 License
 
-✅ **Add a sample screenshot of API Swagger docs** in the README?
-✅ Or **include an example Trello/Notion link for project planning?**
+MIT License © 2025 Emmanuel Mobolaji
 
-Also, should I **write a one-paragraph “Portfolio Summary”** you can use on LinkedIn/GitHub?
+---
+
