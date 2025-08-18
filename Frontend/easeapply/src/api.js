@@ -2,7 +2,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { authAPI, jobAPI, resumeAPI, analysisAPI, handleAPIError, createFormData, tokenManager } from './services/api'
 
 // -------------------- Global State --------------------
-export const currentView = ref('login')
+export const currentView = ref('/')
 export const isAuthenticated = ref(false)
 export const user = ref(null)
 
@@ -168,7 +168,7 @@ export const logout = async () => {
     localStorage.removeItem('refresh_token')
     isAuthenticated.value = false
     user.value = null
-    currentView.value = 'login'
+    currentView.value = '/'
     jobs.value = []
     resumes.value = []
     generatedCoverLetter.value = ''
@@ -182,7 +182,7 @@ export const resetPassword = async () => {
   try {
     await authAPI.resetPassword(resetForm.email)
     showToast('Password reset link sent to your email!')
-    currentView.value = 'login'
+    currentView.value = '/'
   } catch (error) {
     authError.value = handleAPIError(error, 'Reset failed')
   } finally {

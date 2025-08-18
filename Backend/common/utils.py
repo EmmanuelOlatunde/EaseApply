@@ -37,7 +37,7 @@ def send_verification_email(user):
             'user': user,
             'uid': uid,
             'token': token,
-            'domain': settings.FRONTEND_URL,
+            'domain': settings.BACKEND_URL,
         })
         
         send_mail(

@@ -308,6 +308,7 @@ LOGGING = {
 
 # FRONTEND_URL = "http://localhost:5173" or FRONTEND_URL
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173') 
+BACKEND_URL = os.environ.get('BACKEND_URL', 'https://easeapply.onrender.com')
 
 # Upstash Redis Configuration
 UPSTASH_REDIS_URL = config('UPSTASH_REDIS_URL')
