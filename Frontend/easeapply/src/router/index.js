@@ -5,6 +5,7 @@ import Home from '../views/Home.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Profile from '../views/Profile.vue'
 import PasswordReset from '../views/PasswordReset.vue'
+import NotFound from '../views/NotFound.vue'
 
 const routes = [
   {
@@ -37,7 +38,11 @@ const routes = [
     component: () => import('../views/PasswordReset.vue'),
     meta: { requiresAuth: false }
   },
-
+  { 
+    path: '/:pathMatch(.*)*', 
+    name: 'NotFound', 
+    component: NotFound 
+  },
 ]
 
 
